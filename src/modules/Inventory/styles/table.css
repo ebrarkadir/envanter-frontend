@@ -1,0 +1,134 @@
+.inventory-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.inventory-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.inventory-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Column header */
+.col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Filter button */
+.filter-btn {
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.filter-btn:hover {
+  background: #f1f5f9;
+}
+
+/* FILTER POPUP */
+.filter-dropdown {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  width: 220px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 10px;
+  z-index: 99;
+}
+
+.filter-title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.filter-search {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.filter-list {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+}
+
+.filter-option {
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.filter-option:hover {
+  background: #f8fafc;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.filter-ok,
+.filter-clear {
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+}
+
+.filter-ok {
+  background: #2563eb;
+  color: white;
+}
+
+.filter-clear {
+  background: #e2e8f0;
+}
+
+/* Row buttons */
+.row-btn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-right: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.row-btn.edit {
+  background: #3b82f6;
+  color: white;
+}
+.row-btn.delete {
+  background: #ef4444;
+  color: white;
+}
+.row-btn.history {
+  background: #6b7280;
+  color: white;
+}

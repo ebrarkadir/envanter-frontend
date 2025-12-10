@@ -1,0 +1,104 @@
+.navbar {
+  width: 100%;
+  height: 70px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 0 28px;
+  box-sizing: border-box;
+}
+
+/* SOL KISIM */
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.nav-logo {
+  height: 60px;
+}
+
+.app-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* SAĞ KISIM */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-btn {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.15s;
+}
+
+.nav-btn:hover {
+  background: #f1f5f9;
+}
+
+/* USER BOX – ESKİ GÖRÜNÜM (bunu KORU) */
+.user-box {
+  background: #e5e7eb;
+  padding: 6px 14px;
+  border-radius: 20px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.role-badge {
+  background: #374151;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+/* WRAPPER ve DROPDOWN – sadece bunlar yeni */
+.user-box-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+/* DROPDOWN MENU */
+.user-dropdown {
+  position: absolute;
+  top: 42px;        /* yükseklik için hafif ayar */
+  right: 0;
+
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  padding: 8px 0;
+  width: 140px;
+  z-index: 50;
+}
+
+.user-dropdown button {
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.user-dropdown button:hover {
+  background: #f2f2f2;
+}

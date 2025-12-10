@@ -1,0 +1,243 @@
+/* ========================================= */
+/* FULL SCREEN BACKGROUND */
+/* ========================================= */
+.login-bg {
+  width: 100vw;
+  height: 100vh;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+/* ========================================= */
+/* CARD */
+/* ========================================= */
+.login-card {
+  position: relative;   /* butonun sabitlenmesi için gerekli */
+
+  width: 420px;
+  padding: 35px 40px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+
+  display: flex;
+  flex-direction: column;
+}
+
+
+
+/* ========================================= */
+/* HEADER */
+/* ========================================= */
+.login-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.login-logo {
+  height: 100px;
+}
+
+.company-btn {
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 22px;
+  padding: 6px 18px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+
+/* ========================================= */
+/* TITLE */
+/* ========================================= */
+.login-title {
+  margin: 15px 0 40px 0;
+  color: #222;
+  font-size: 28px;
+  font-weight: 600;
+  text-align: left;   /* center → left */
+}
+
+
+
+/* ========================================= */
+/* LABELS */
+/* ========================================= */
+.login-form label {
+  display: flex;
+  flex-direction: column;
+  color: #444;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+
+/* ========================================= */
+/* DEFAULT INPUT (KULLANICI ADI) */
+/* ========================================= */
+.login-form input {
+  margin-top: 6px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #d0d7e2;
+  background: white;       /* her zaman beyaz */
+  outline: none;
+  font-size: 15px;
+}
+
+.login-form input:focus {
+  border-color: #4f9cff;
+  background: white;
+}
+
+
+/* ========================================= */
+/* PASSWORD WRAPPER */
+/* ========================================= */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.password-wrapper input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  padding-right: 85px; /* buton boşluğu */
+  border-radius: 10px;
+  border: 1px solid #d0d7e2;
+  font-size: 15px;
+  transition: 0.2s;
+}
+
+/* ========================================= */
+/* INPUT STYLES: boş → beyaz, dolu/focus → sarı */
+/* ========================================= */
+.input-empty {
+  background: white !important;
+  border-color: #d0d7e2 !important;
+}
+
+.input-focused {
+  background: #fffde7 !important;
+  border-color: #e3dfb8 !important;
+}
+
+
+/* ========================================= */
+/* SHOW BUTTON */
+/* ========================================= */
+.show-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-40%);
+  
+  height: 28px;
+  padding: 0 12px;
+  min-width: 48px;
+
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+/* Sarı moda geçince */
+.show-btn.input-focused {
+  background: #fffde7 !important;
+  border-color: #e3dfb8 !important;
+}
+
+/* Hover */
+.show-btn:hover {
+  filter: brightness(1.05);
+}
+
+
+/* ========================================= */
+/* LOGIN BUTTON */
+/* ========================================= */
+.login-btn {
+  margin-top: 16px;
+  width: 100%;
+  height: 42px;            /* 50 → 42 daha ideal */
+  font-size: 15px;         /* 17 → 15 */
+  border-radius: 10px;     /* 12 → 10 */
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  background: #1d4ed8;
+}
+
+
+
+/* ========================================= */
+/* THEME BUTTON */
+/* ========================================= */
+.theme-btn {
+  position: absolute;
+  bottom: 25px;
+  right: 25px;
+
+  background: white;
+  padding: 10px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+
+.company-btn {
+  position: absolute;
+  top: 25px;
+  right: 20px;
+
+  background: #1d4ed8;
+  color: white;
+  border: none;
+  border-radius: 22px;
+  padding: 6px 18px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 10;
+
+  /* ⭐ Yumuşak kurumsal gölge */
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35);
+  transition: box-shadow 0.2s ease;
+}
+
+.company-btn:hover {
+  /* ⭐ Hover’da gölgeyi hafif büyütüyorum */
+  box-shadow: 0 6px 18px rgba(29, 78, 216, 0.45);
+}

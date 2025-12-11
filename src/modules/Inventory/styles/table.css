@@ -1,51 +1,86 @@
+/* =========================
+   TABLE WRAPPER
+   ========================= */
 .inventory-table-wrapper {
   width: 100%;
   overflow-x: auto;
-  margin-top: 20px;
+  overflow-y: hidden;
+  background: white;
+  border-radius: 10px;
 }
 
+/* =========================
+   TABLE
+   ========================= */
 .inventory-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* Kolonlar orantılı sıkışır */
 }
 
+/* Başlık + Hücre padding */
+.inventory-table th,
+.inventory-table td {
+  white-space: normal;   /* 🔥 Artık metin taşmıyor, alta iner */
+  word-break: break-word; /* 🔥 Uzun kelimeleri bile böler */
+  padding: 8px 12px;
+}
+
+
+/* =========================
+   TABLE HEADER
+   ========================= */
 .inventory-table th {
   background: #f8fafc;
-  font-weight: 600;
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid #e2e8f0;
+  font-weight: 500; /* 🔥 bold DEĞİL daha yumuşak */
+  font-size: 12.5px;
   position: relative;
+  white-space: nowrap;
 }
 
 .inventory-table td {
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid #f1f5f9;
+  word-wrap: break-word;
 }
 
-/* Column header */
+/* =========================
+   COLUMN HEADER DIV
+   ========================= */
 .col-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  white-space: normal; /* 🔥 Başlık metni de satır kaydırabilir */
 }
 
-/* Filter button */
+
+
+/* =========================
+   FILTER BUTTON
+   ========================= */
 .filter-btn {
   background: white;
   border: 1px solid #cbd5e1;
   border-radius: 4px;
   padding: 2px 6px;
   cursor: pointer;
+  font-size: 11px;
 }
 
 .filter-btn:hover {
   background: #f1f5f9;
 }
 
-/* FILTER POPUP */
+/* =========================
+   FILTER DROPDOWN
+   ========================= */
 .filter-dropdown {
   position: absolute;
-  top: 36px;
+  top: 34px;
   right: 0;
   width: 220px;
   background: white;
@@ -66,6 +101,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   margin-bottom: 8px;
+  font-size: 13px;
 }
 
 .filter-list {
@@ -81,6 +117,7 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  font-size: 13px;
 }
 
 .filter-option:hover {
@@ -99,6 +136,7 @@
   border-radius: 6px;
   cursor: pointer;
   border: none;
+  font-size: 13px;
 }
 
 .filter-ok {
@@ -110,7 +148,9 @@
   background: #e2e8f0;
 }
 
-/* Row buttons */
+/* =========================
+   ROW BUTTONS
+   ========================= */
 .row-btn {
   padding: 4px 8px;
   border-radius: 6px;
@@ -124,11 +164,146 @@
   background: #3b82f6;
   color: white;
 }
+
 .row-btn.delete {
   background: #ef4444;
   color: white;
 }
+
 .row-btn.history {
   background: #6b7280;
   color: white;
+}
+
+/* =========================
+   GLOBAL SEARCH + ACTIVE FILTER BAR
+   ========================= */
+.table-top-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+/* Global search */
+.global-search {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+/* Aktif / Pasif dropdown */
+.active-filter {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  background: white;
+}
+
+/* =========================
+   PAGINATION
+   ========================= */
+.pagination {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.pagination button {
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+/* Başlık satırının altındaki çizgiyi belirginleştir */
+.inventory-table thead tr {
+  border-bottom: 2px solid #d1d5db;   /* daha kalın çizgi */
+}
+/* İşlem hücresi */
+.action-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Genel buton şekli */
+.icon-btn {
+  width: 42px;
+  height: 38px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+  transition: opacity 0.2s ease;
+}
+
+/* Arka plan renkleri */
+.icon-btn.edit {
+  background: #3b82f6; /* Mavi */
+}
+
+.icon-btn.delete {
+  background: #ef4444; /* Kırmızı */
+}
+
+.icon-btn.history {
+  background: #6b7280; /* Gri */
+}
+
+/* İkonlar siyah/beyaz */
+.icon-btn img {
+  width: 20px;
+  height: 20px;
+  filter: brightness(0) invert(1); /* 🔥 ikonları beyaza çevirir */
+  opacity: 0.9;
+}
+
+.icon-btn:hover img {
+  opacity: 1;
+}
+
+/* Tooltip */
+.icon-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  background: #111;
+  color: white;
+  padding: 3px 6px;
+  font-size: 11px;
+  border-radius: 4px;
+
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+/* Tooltip görünür */
+.icon-btn:hover::after {
+  opacity: 1;
 }

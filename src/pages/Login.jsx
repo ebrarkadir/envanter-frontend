@@ -16,6 +16,8 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+
+    console.log("Login çalıştı:", username, password);
     try {
       const data = await loginRequest(username, password);
 

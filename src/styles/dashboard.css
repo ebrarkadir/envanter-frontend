@@ -15,7 +15,6 @@
 .dashboard-content {
   flex: 1;
   padding: 20px;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -62,9 +61,6 @@
   white-space: nowrap;
 }
 
-/* ============================================
-   TABLO KUTUSU — İçerik alanı
-============================================ */
 .table-box {
   background: white;
   border-radius: 10px;
@@ -73,11 +69,15 @@
   width: 95%;
   margin: 0 auto;
 
+  flex: 1;
+  min-height: 0;          /* 🔥 FLEX BUG FIX */
+  overflow-y: auto;       /* 🔥 TEK DİKEY SCROLL */
   overflow-x: auto;
-  overflow-y: hidden;
 
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
+
+
 
 /* ============================================
    SIDEBAR AÇILDIĞINDA DARALMA

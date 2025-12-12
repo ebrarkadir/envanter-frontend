@@ -1,50 +1,89 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import "../../styles/table.css";
 
 export default function ColumnFilter({
   title,
   options = [],
   selected = [],
+  anchorRef,
   onChange,
   onClear,
   onClose,
 }) {
   const [search, setSearch] = useState("");
   const [localSelection, setLocalSelection] = useState([...selected]);
-  const ref = useRef();
+  const dropdownRef = useRef(null);
+  
+  // Başlangıçta null (render etme)
+  const [pos, setPos] = useState(null);
 
-  // Dışarı tıklayınca kapanır
+  /* 🔥 EKRAN BOYANMADAN ÖNCE POZİSYON HESAPLA (Animasyonu engeller) */
+  useLayoutEffect(() => {
+    if (!anchorRef) return;
+
+    const rect = anchorRef.getBoundingClientRect();
+    const dropdownWidth = 220;
+
+    let left = rect.right - dropdownWidth;
+    if (left < 8) left = rect.left;
+
+    setPos({
+      top: rect.bottom + window.scrollY + 6,
+      left: left + window.scrollX,
+    });
+  }, [anchorRef]);
+
+  /* 🔥 DIŞARI TIKLAMA KONTROLÜ (useEffect burada lazım) */
   useEffect(() => {
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) onClose();
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target) &&
+        !anchorRef.contains(e.target)
+      ) {
+        onClose();
+      }
     };
+
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [onClose, anchorRef]);
 
-  // Arama
+  // Pozisyon hesaplanana kadar hiçbir şey gösterme
+  if (!pos) return null;
+
   const filteredOptions = options.filter((o) =>
     o.toLowerCase().includes(search.toLowerCase())
   );
 
   const toggleItem = (item) => {
-    if (localSelection.includes(item)) {
-      setLocalSelection(localSelection.filter((x) => x !== item));
-    } else {
-      setLocalSelection([...localSelection, item]);
-    }
+    setLocalSelection((prev) =>
+      prev.includes(item)
+        ? prev.filter((x) => x !== item)
+        : [...prev, item]
+    );
   };
 
   const toggleAll = () => {
-    if (localSelection.length === options.length) {
-      setLocalSelection([]);
-    } else {
-      setLocalSelection([...options]);
-    }
+    setLocalSelection(
+      localSelection.length === options.length ? [] : [...options]
+    );
   };
 
-  return (
-    <div className="filter-dropdown" ref={ref}>
+  return createPortal(
+    <div
+      ref={dropdownRef}
+      className="filter-dropdown"
+      style={{
+        position: "absolute",
+        top: pos.top,
+        left: pos.left,
+        zIndex: 9999,
+        // 🔥 CSS transition varsa bile bunu eziyoruz ki animasyon olmasın
+        transition: "none", 
+      }}
+    >
       <div className="filter-title">{title} Filtrele</div>
 
       <input
@@ -57,8 +96,8 @@ export default function ColumnFilter({
       <div className="filter-option" onClick={toggleAll}>
         <input
           type="checkbox"
-          checked={localSelection.length === options.length}
           readOnly
+          checked={localSelection.length === options.length}
         />
         <span>(Tümü)</span>
       </div>
@@ -72,8 +111,8 @@ export default function ColumnFilter({
           >
             <input
               type="checkbox"
-              checked={localSelection.includes(item)}
               readOnly
+              checked={localSelection.includes(item)}
             />
             <span>{item}</span>
           </div>
@@ -81,13 +120,17 @@ export default function ColumnFilter({
       </div>
 
       <div className="filter-actions">
-        <button className="filter-ok" onClick={() => onChange(localSelection)}>
+        <button
+          className="filter-ok"
+          onClick={() => onChange(localSelection)}
+        >
           OK
         </button>
         <button className="filter-clear" onClick={onClear}>
           Temizle
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

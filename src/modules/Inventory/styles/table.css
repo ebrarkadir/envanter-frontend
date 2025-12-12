@@ -3,10 +3,11 @@
    ========================= */
 .inventory-table-wrapper {
   width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
   background: white;
   border-radius: 10px;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
 }
 
 /* =========================
@@ -15,29 +16,29 @@
 .inventory-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* Kolonlar orantılı sıkışır */
+  table-layout: auto; /* Kolonlar orantılı sıkışır */
+  overflow: visible;
 }
 
 /* Başlık + Hücre padding */
 .inventory-table th,
 .inventory-table td {
-  white-space: normal;   /* 🔥 Artık metin taşmıyor, alta iner */
+  white-space: normal; /* 🔥 Artık metin taşmıyor, alta iner */
   word-break: break-word; /* 🔥 Uzun kelimeleri bile böler */
   padding: 8px 12px;
 }
-
 
 /* =========================
    TABLE HEADER
    ========================= */
 .inventory-table th {
-  background: #f8fafc;
-  padding: 10px;
-  border-bottom: 1px solid #e2e8f0;
-  font-weight: 500; /* 🔥 bold DEĞİL daha yumuşak */
-  font-size: 12.5px;
-  position: relative;
-  white-space: nowrap;
+  background: #f9fafb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  padding: 12px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: bottom;
 }
 
 .inventory-table td {
@@ -55,9 +56,15 @@
   align-items: flex-start;
   gap: 4px;
   white-space: normal; /* 🔥 Başlık metni de satır kaydırabilir */
+  position: relative; /* 🔥 dropdown bununla hizalanacak */
+  overflow: visible;
+  z-index: 0;
 }
-
-
+.inventory-table th:last-child .filter-dropdown,
+.inventory-table th:nth-last-child(2) .filter-dropdown {
+  right: auto;
+  left: 0;
+}
 
 /* =========================
    FILTER BUTTON
@@ -68,7 +75,7 @@
   border-radius: 4px;
   padding: 2px 6px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .filter-btn:hover {
@@ -80,14 +87,14 @@
    ========================= */
 .filter-dropdown {
   position: absolute;
-  top: 34px;
+  top: 100%;
   right: 0;
   width: 220px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   padding: 10px;
-  z-index: 99;
+  z-index: 9999;
 }
 
 .filter-title {
@@ -101,7 +108,7 @@
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   margin-bottom: 8px;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .filter-list {
@@ -178,7 +185,7 @@
 /* =========================
    GLOBAL SEARCH + ACTIVE FILTER BAR
    ========================= */
-.table-top-bar {
+.top-bar {
   display: flex;
   gap: 12px;
   margin-bottom: 12px;
@@ -206,38 +213,49 @@
 /* =========================
    PAGINATION
    ========================= */
+.pagination-wrapper {
+  position: relative;
+  margin-top: 16px;
+}
+
+/* Ortadaki pagination aynen kalsın */
 .pagination {
-  margin-top: 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 14px;
+  justify-content: center;
+  gap: 16px;
 }
 
-.pagination button {
-  padding: 6px 12px;
-  border: 1px solid #d1d5db;
-  background: white;
-  border-radius: 6px;
-  cursor: pointer;
+/* Sağ alt bilgi */
+.pagination-info {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+
+  font-size: 13px;
+  color: #374151;
 }
 
-.pagination button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.pagination-info strong {
+  font-weight: 600;
 }
-
 
 /* Başlık satırının altındaki çizgiyi belirginleştir */
 .inventory-table thead tr {
-  border-bottom: 2px solid #d1d5db;   /* daha kalın çizgi */
+  border-bottom: 2px solid #d1d5db; /* daha kalın çizgi */
 }
+
+.inventory-table thead {
+  overflow: visible;
+}
+
 /* İşlem hücresi */
 .action-cell {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* 🔥 ALT ALTA */
   gap: 8px;
   align-items: center;
+  justify-content: center;
 }
 
 /* Genel buton şekli */
@@ -306,4 +324,142 @@
 /* Tooltip görünür */
 .icon-btn:hover::after {
   opacity: 1;
+}
+/* =========================
+   INVENTORY HEADER
+   ========================= */
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+/* SOL TARAF */
+.inventory-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-top: 30px; /* 🔥 biraz aşağı */
+  margin-left: 15px; /* 🔥 biraz sola */
+}
+
+.inventory-title h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.inventory-count {
+  background: #1f2937;
+  color: white;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+.inventory-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.inventory-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.global-search {
+  width: 260px;
+}
+
+.active-filter {
+  width: 150px;
+}
+.inventory-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.outline-btn {
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.primary-btn {
+  padding: 8px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.filter-btn {
+  padding: 0 6px;
+  height: 20px;
+  font-size: 10px;
+}
+
+/* SAĞ TARAF */
+.inventory-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 320px;
+}
+
+/* AKSİYON BUTONLARI */
+.inventory-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.outline-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.primary-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.inactive-row {
+  background: #f3f4f6;
+  opacity: 0.85;
+}
+
+.icon-btn.restore {
+  background: #16a34a;
+}
+.clear-filters-btn {
+  background: transparent;
+  border: 1px dashed #dc2626;
+  color: #dc2626;
+  font-size: 11px;
+
+  /* 👇 küçülten kısım */
+  padding: 2px 5px;
+  line-height: 1;
+  border-radius: 5px;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-filters-btn:hover {
+  background: #fee2e2;
 }

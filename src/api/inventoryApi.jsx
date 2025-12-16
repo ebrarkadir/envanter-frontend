@@ -1,80 +1,136 @@
-import { getToken } from "../utils/token";
+// src/api/inventoryApi.js
+import { apiFetch } from "./apiClient";
 
-const BASE_URL = "http://172.25.0.10:8081/api/inventory";
+const API_URL = import.meta.env.VITE_API_URL;
 
-/**
- * filter:
- *  - "active"   → sadece aktifler  (includeInactive paramı yok)
- *  - "inactive" → aktif+pasif gelir (sonra frontend pasifi ayırır)
- *  - "all"      → aktif+pasif gelir
- */
-export async function getInventories(filter = "active") {
-  let url = BASE_URL;
+/* =========================
+   INVENTORY LIST
+========================= */
+export function getInventories(filter = "active") {
+  let query = "";
 
-  // ✅ eski çalışan davranış: sadece gerektiğinde includeInactive=true ekle
   if (filter === "inactive" || filter === "all") {
-    url += "?includeInactive=true";
+    query = "?includeInactive=true";
   }
 
-  const token = getToken();
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+  return apiFetch(`/inventory${query}`);
+}
+
+/* =========================
+   DEACTIVATE / RESTORE
+========================= */
+export function deactivateInventory(id) {
+  if (!id) throw new Error("ID boş olamaz");
+
+  return apiFetch(`/inventory/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export function restoreInventory(id) {
+  if (!id) throw new Error("ID boş olamaz");
+
+  return apiFetch(`/inventory/${id}/restore`, {
+    method: "PATCH",
+  });
+}
+
+/* =========================
+   EXCEL IMPORT
+========================= */
+export async function importInventoryExcel(file) {
+  if (!file) throw new Error("Dosya yok");
+
+  const token = localStorage.getItem("token");
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/inventory/import`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
   });
 
+  if (res.status === 401) {
+    localStorage.clear();
+    window.location.href = "/login";
+    throw new Error("UNAUTHORIZED");
+  }
+
   if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`Liste alınamadı (${res.status}) ${errText}`);
+    const text = await res.text().catch(() => "");
+    throw new Error(text || "IMPORT_FAILED");
   }
 
   return await res.json();
 }
 
-// ✅ Aktif kaydı pasife alma (silme yok)
-export async function deactivateInventory(id) {
-  if (!id) throw new Error("ID boş olamaz");
+/* =========================
+   EXCEL EXPORT
+========================= */
+export async function exportInventoryExcel(filter = "active") {
+  let query = "";
 
-  const token = getToken();
-  const res = await fetch(`${BASE_URL}/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`Kayıt pasife alınamadı (${res.status}) ${errText}`);
+  if (filter === "inactive") {
+    query = "?filter=inactive";
+  } else if (filter === "all") {
+    query = "?filter=all";
+  } else {
+    query = "?filter=active";
   }
 
-  // backend body dönmüyor → problem yok
-  return true;
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${API_URL}/Inventory/export-file${query}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (res.status === 401) {
+    localStorage.clear();
+    window.location.href = "/login";
+    throw new Error("UNAUTHORIZED");
+  }
+
+  if (!res.ok) {
+    throw new Error("EXPORT_FAILED");
+  }
+
+  return await res.blob();
 }
 
-// ✅ Pasif kaydı geri yükleme
-export async function restoreInventory(id) {
-  if (!id) throw new Error("ID boş olamaz");
 
-  const token = getToken();
-  const res = await fetch(`${BASE_URL}/${id}/restore`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-  });
+/* =========================
+   INVENTORY HISTORY
+========================= */
+export async function getInventoryHistory(inventoryId) {
+  if (!inventoryId) throw new Error("ENVANTER_ID_YOK");
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`Kayıt geri yüklenemedi (${res.status}) ${errText}`);
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(
+    `${API_URL}/inventory/${inventoryId}/history`,
+    {
+      method: "GET",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    }
+  );
+
+  if (res.status === 401) {
+    localStorage.clear();
+    window.location.href = "/login";
+    throw new Error("UNAUTHORIZED");
   }
 
-  return true;
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || "HISTORY_FETCH_FAILED");
+  }
+
+  return await res.json();
 }

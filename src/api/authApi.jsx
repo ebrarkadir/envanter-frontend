@@ -1,8 +1,7 @@
-
-const BASE_URL = "http://172.25.0.10:8081/api";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export async function loginRequest(username, password) {
-  const response = await fetch(`${BASE_URL}/auth/login`, {
+  const res = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -10,10 +9,10 @@ export async function loginRequest(username, password) {
     body: JSON.stringify({ username, password }),
   });
 
-  if (!response.ok) {
-    const err = await response.text();
+  if (!res.ok) {
+    const err = await res.text();
     throw new Error(err || "Login failed");
   }
 
-  return await response.json();
+  return await res.json();
 }

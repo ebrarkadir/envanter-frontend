@@ -155,42 +155,6 @@
   background: #e2e8f0;
 }
 
-/* =========================
-   ROW BUTTONS
-   ========================= */
-.row-btn {
-  padding: 4px 8px;
-  border-radius: 6px;
-  margin-right: 6px;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.row-btn.edit {
-  background: #3b82f6;
-  color: white;
-}
-
-.row-btn.delete {
-  background: #ef4444;
-  color: white;
-}
-
-.row-btn.history {
-  background: #6b7280;
-  color: white;
-}
-
-/* =========================
-   GLOBAL SEARCH + ACTIVE FILTER BAR
-   ========================= */
-.top-bar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-  align-items: center;
-}
 
 /* Global search */
 .global-search {
@@ -259,20 +223,7 @@
 }
 
 /* Genel buton şekli */
-.icon-btn {
-  width: 42px;
-  height: 38px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  position: relative;
-  transition: opacity 0.2s ease;
-}
 
 /* Arka plan renkleri */
 .icon-btn.edit {
@@ -303,28 +254,29 @@
 .icon-btn::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: -28px;
+
+  top: -32px;                 /* 🔥 ÜSTE ALDIK */
   left: 50%;
   transform: translateX(-50%);
 
   background: #111;
   color: white;
-  padding: 3px 6px;
+  padding: 4px 8px;
   font-size: 11px;
-  border-radius: 4px;
+  border-radius: 6px;
 
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
 
-  transition: opacity 0.2s ease;
-  z-index: 10;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 9999;
 }
-
-/* Tooltip görünür */
 .icon-btn:hover::after {
   opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
 }
+
 /* =========================
    INVENTORY HEADER
    ========================= */
@@ -369,48 +321,13 @@
   gap: 10px;
 }
 
-.global-search {
-  width: 260px;
-}
 
-.active-filter {
-  width: 150px;
-}
-.inventory-actions {
-  display: flex;
-  gap: 8px;
-}
 
-.outline-btn {
-  padding: 8px 14px;
-  border: 1px solid #cbd5e1;
-  background: white;
-  border-radius: 8px;
-  cursor: pointer;
-}
 
-.primary-btn {
-  padding: 8px 16px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.filter-btn {
-  padding: 0 6px;
-  height: 20px;
-  font-size: 10px;
-}
 
-/* SAĞ TARAF */
-.inventory-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  min-width: 320px;
-}
+
+
+
 
 /* AKSİYON BUTONLARI */
 .inventory-actions {
@@ -427,7 +344,8 @@
   font-weight: 500;
 }
 
-.primary-btn {
+
+.multiple-btn{
   padding: 8px 16px;
   border-radius: 8px;
   border: none;
@@ -436,6 +354,28 @@
   font-weight: 500;
   cursor: pointer;
 }
+
+.page-btn {
+  background: #ffffff;
+  color: #2563eb;
+  border: 1.5px solid #c7d2fe;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.page-btn:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+}
+
+.page-btn:active {
+  transform: scale(0.97);
+}
+
 
 .inactive-row {
   background: #f3f4f6;
@@ -462,4 +402,130 @@
 
 .clear-filters-btn:hover {
   background: #fee2e2;
+}
+
+
+
+.filter-selected-preview {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #6b7280;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.filter-selected-preview .label {
+  font-weight: 500;
+}
+
+.filter-selected-preview .values {
+  color: #374151;
+}
+/* =========================
+   INVENTORY ROW HOVER EFFECT (LOG STYLE)
+   ========================= */
+
+/* Normal satır */
+.inventory-table tbody tr {
+  transition:
+    background-color 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* Hover efekti */
+.inventory-table tbody tr:hover {
+  background-color: #f9fafb;              /* loglardaki açık ton */
+  transform: translateY(-2px);             /* 🔥 yukarı kalkma */
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  z-index: 2;
+  position: relative;
+}
+
+/* Pasif satırlar hover’da da sönük kalsın */
+.inventory-table tbody tr.inactive-row:hover {
+  background-color: #e5e7eb;
+  box-shadow: none;
+  transform: none;
+}
+/* Hücrelerin hover'da yumuşak görünmesi */
+.inventory-table tbody tr:hover td {
+  color: #111827;
+}
+
+.inventory-table tbody tr:hover .icon-btn {
+  transform: scale(1.05);
+}
+
+.icon-btn:hover {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.icon-btn {
+  width: 42px;
+  height: 38px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+
+.danger-btn {
+  background: #dc2626;              /* Koyu kırmızı */
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.danger-btn:hover {
+  background: #b91c1c;
+}
+
+.danger-btn:active {
+  transform: scale(0.97);
+}
+
+.danger-btn:disabled {
+  background: #fca5a5;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+.success-btn {
+  background: #16a34a;              /* Yeşil */
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.success-btn:hover {
+  background: #15803d;
+}
+
+.success-btn:active {
+  transform: scale(0.97);
+}
+
+.success-btn:disabled {
+  background: #86efac;
+  cursor: not-allowed;
+  opacity: 0.85;
 }

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { loginRequest } from "../api/authApi";
-import { saveToken, saveRefreshToken } from "../utils/token";
 import logo from "../assets/logo.png";
 import wallpaper from "../assets/wallpaper.jpg";
 import "../styles/login.css";
@@ -17,12 +16,11 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    console.log("Login çalıştı:", username, password);
     try {
       const data = await loginRequest(username, password);
 
-      saveToken(data.token);
-      saveRefreshToken(data.refreshToken);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("refreshToken", data.refreshToken);
 
       localStorage.setItem(
         "user",
@@ -48,6 +46,7 @@ export default function Login() {
         <div className="login-header">
           <img src={logo} alt="ULAK Logo" className="login-logo" />
         </div>
+
         <button className="company-btn">ULAK HABERLEŞME A.Ş.</button>
 
         <h2 className="login-title">Kullanıcı Girişi</h2>

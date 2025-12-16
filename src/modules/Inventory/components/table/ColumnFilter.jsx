@@ -12,13 +12,27 @@ export default function ColumnFilter({
   onClose,
 }) {
   const [search, setSearch] = useState("");
-  const [localSelection, setLocalSelection] = useState([...selected]);
+  const [localSelection, setLocalSelection] = useState([]);
   const dropdownRef = useRef(null);
-  
-  // Başlangıçta null (render etme)
   const [pos, setPos] = useState(null);
 
-  /* 🔥 EKRAN BOYANMADAN ÖNCE POZİSYON HESAPLA (Animasyonu engeller) */
+  /* =========================
+     🔥 SEÇİM SENKRONİZASYONU
+     ========================= */
+
+  // Parent’tan gelen selected değişirse → sync et
+  useEffect(() => {
+    setLocalSelection(selected.filter((x) => options.includes(x)));
+  }, [selected, options]);
+
+  // Options daralırsa → geçersiz seçimleri at
+  useEffect(() => {
+    setLocalSelection((prev) => prev.filter((x) => options.includes(x)));
+  }, [options]);
+
+  /* =========================
+     🔥 POZİSYON HESABI
+     ========================= */
   useLayoutEffect(() => {
     if (!anchorRef) return;
 
@@ -34,12 +48,15 @@ export default function ColumnFilter({
     });
   }, [anchorRef]);
 
-  /* 🔥 DIŞARI TIKLAMA KONTROLÜ (useEffect burada lazım) */
+  /* =========================
+     🔥 DIŞARI TIKLAMA
+     ========================= */
   useEffect(() => {
     const handler = (e) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(e.target) &&
+        anchorRef &&
         !anchorRef.contains(e.target)
       ) {
         onClose();
@@ -50,7 +67,6 @@ export default function ColumnFilter({
     return () => document.removeEventListener("mousedown", handler);
   }, [onClose, anchorRef]);
 
-  // Pozisyon hesaplanana kadar hiçbir şey gösterme
   if (!pos) return null;
 
   const filteredOptions = options.filter((o) =>
@@ -80,8 +96,7 @@ export default function ColumnFilter({
         top: pos.top,
         left: pos.left,
         zIndex: 9999,
-        // 🔥 CSS transition varsa bile bunu eziyoruz ki animasyon olmasın
-        transition: "none", 
+        transition: "none",
       }}
     >
       <div className="filter-title">{title} Filtrele</div>
@@ -93,11 +108,25 @@ export default function ColumnFilter({
         onChange={(e) => setSearch(e.target.value)}
       />
 
+      {localSelection.length > 0 && (
+        <div className="filter-selected-preview">
+          <span className="label">Seçilenler:</span>
+          <span className="values">
+            {localSelection.slice(0, 2).join(", ")}
+            {localSelection.length > 2 &&
+              `, +${localSelection.length - 2}`}
+          </span>
+        </div>
+      )}
+
       <div className="filter-option" onClick={toggleAll}>
         <input
           type="checkbox"
           readOnly
-          checked={localSelection.length === options.length}
+          checked={
+            options.length > 0 &&
+            localSelection.length === options.length
+          }
         />
         <span>(Tümü)</span>
       </div>
@@ -126,7 +155,13 @@ export default function ColumnFilter({
         >
           OK
         </button>
-        <button className="filter-clear" onClick={onClear}>
+        <button
+          className="filter-clear"
+          onClick={() => {
+            setLocalSelection([]);
+            onClear();
+          }}
+        >
           Temizle
         </button>
       </div>

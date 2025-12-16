@@ -1,22 +1,38 @@
 import { useEffect, useMemo, useState } from "react";
 import ColumnFilter from "./ColumnFilter";
 import "../../styles/table.css";
+import InventoryExportButton from "../inventory/InventoryExportButton";
+import InventoryImportButton from "../inventory/InventoryImportButton";
 import {
   deactivateInventory,
   restoreInventory,
+  getInventories,
 } from "../../../../api/inventoryApi";
 import DescriptionModal from "../../../../components/DescriptionModal";
+import InventoryHistoryModal from "../history/InventoryHistoryModal";
+import ConfirmModal from "../../../../components/Modal/ConfirmModal";
 
 export default function InventoryTable({
   data = [],
   activeFilter,
   onActiveFilterChange,
   onDataChange,
+  onEdit,
 }) {
   const [openFilter, setOpenFilter] = useState(null);
   // 🔥 DÜZELTME 1: Tıklanan butonun referansını tutmak için state eklendi
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [search, setSearch] = useState("");
+  const [openHistoryId, setOpenHistoryId] = useState(null);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  const [confirm, setConfirm] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
 
   const statusMap = {
     0: "Depoda",
@@ -113,13 +129,31 @@ export default function InventoryTable({
     return filteredData.slice(start, start + pageSize);
   }, [filteredData, page]);
 
-  const getOptions = (key) => {
+  const getOptions = (targetKey) => {
     const set = new Set();
+
     data.forEach((row) => {
-      // 👈 DİKKAT
-      const v = normalizeCell(key, row[key]);
+      // 🔥 hedef kolon HARİÇ diğer filtreleri uygula
+      const isValid = columns.every((col) => {
+        if (col.key === targetKey) return true;
+
+        const selected = filters[col.key];
+        if (!selected.length) return true;
+
+        let value = row[col.key] ?? "";
+        if (col.key === "status") value = statusMap[value] || "";
+        if (col.key.toLowerCase().includes("date") && value)
+          value = value.split("T")[0];
+
+        return selected.includes(value.toString());
+      });
+
+      if (!isValid) return;
+
+      const v = normalizeCell(targetKey, row[targetKey]);
       if (v) set.add(v);
     });
+
     return Array.from(set);
   };
 
@@ -149,44 +183,57 @@ export default function InventoryTable({
   /* =========================
       DELETE / RESTORE HANDLERS
      ========================= */
-  const handleDeactivate = async (id) => {
-    if (!window.confirm("Bu kayıt pasif hale getirilsin mi?")) return;
+  const handleDeactivate = (id) => {
+    setConfirm({
+      open: true,
+      title: "Kayıt Pasifleştirilecek",
+      message: "Bu kayıt pasif hale getirilecek. Devam edilsin mi?",
+      onConfirm: async () => {
+        try {
+          await deactivateInventory(id);
 
-    try {
-      await deactivateInventory(id);
-
-      onDataChange((prev) => {
-        // 🔥 AKTİF KAYITLAR → LİSTEDEN AT
-        if (activeFilter === "active") {
-          return prev.filter((x) => x.id !== id);
+          onDataChange((prev) => {
+            if (activeFilter === "active") {
+              return prev.filter((x) => x.id !== id);
+            }
+            return prev.map((x) =>
+              x.id === id ? { ...x, isActive: false } : x
+            );
+          });
+        } catch (err) {
+          alert(err.message || "Pasife alma başarısız");
+        } finally {
+          setConfirm({ open: false });
         }
-
-        // 🔥 TÜM KAYITLAR → SADECE FLAG DEĞİŞTİR
-        return prev.map((x) => (x.id === id ? { ...x, isActive: false } : x));
-      });
-    } catch (err) {
-      alert(err.message || "Pasife alma başarısız");
-    }
+      },
+    });
   };
 
-  const handleRestore = async (id) => {
-    if (!window.confirm("Bu kayıt tekrar aktif edilsin mi?")) return;
+  const handleRestore = (id) => {
+    setConfirm({
+      open: true,
+      title: "Kayıt Geri Yüklenecek",
+      message: "Bu kayıt tekrar aktif hale getirilecek. Devam edilsin mi?",
+      onConfirm: async () => {
+        try {
+          await restoreInventory(id);
 
-    try {
-      await restoreInventory(id);
+          onDataChange((prev) => {
+            if (activeFilter === "inactive") {
+              return prev.filter((x) => x.id !== id);
+            }
 
-      onDataChange((prev) => {
-        // 🔥 PASİF KAYITLAR → LİSTEDEN AT
-        if (activeFilter === "inactive") {
-          return prev.filter((x) => x.id !== id);
+            return prev.map((x) =>
+              x.id === id ? { ...x, isActive: true } : x
+            );
+          });
+        } catch (err) {
+          alert(err.message || "Geri yükleme başarısız");
+        } finally {
+          setConfirm({ open: false });
         }
-
-        // 🔥 TÜM KAYITLAR → SADECE FLAG DEĞİŞTİR
-        return prev.map((x) => (x.id === id ? { ...x, isActive: true } : x));
-      });
-    } catch (err) {
-      alert(err.message || "Geri yükleme başarısız");
-    }
+      },
+    });
   };
 
   return (
@@ -199,11 +246,199 @@ export default function InventoryTable({
         </div>
 
         <div className="inventory-right">
-          {/* ÜST: AKSİYONLAR */}
           <div className="inventory-actions">
-            <button className="outline-btn">Dışa Aktar</button>
-            <button className="outline-btn">İçe Al</button>
-            <button className="primary-btn">Çoklu Seçim</button>
+            {/* NORMAL MOD */}
+            {!multiSelectMode && (
+              <>
+                <InventoryExportButton activeFilter={activeFilter} />
+
+                <InventoryImportButton
+                  onImported={async () => {
+                    const freshData = await getInventories(activeFilter);
+                    onDataChange(() => freshData);
+                  }}
+                />
+
+                <button
+                  className="multiple-btn"
+                  onClick={() => setMultiSelectMode(true)}
+                >
+                  Çoklu Seçim
+                </button>
+              </>
+            )}
+
+            {/* MULTI SELECT MOD */}
+            {multiSelectMode && (
+              <>
+                {(activeFilter === "active" || activeFilter === "all") && (
+                  <>
+                    <button
+                      className="danger-btn"
+                      disabled={selectedIds.size === 0}
+                      onClick={() =>
+                        setConfirm({
+                          open: true,
+                          title: "Toplu Silme",
+                          message: `${selectedIds.size} kayıt pasif hale getirilecek. Emin misin?`,
+                          onConfirm: async () => {
+                            for (const id of selectedIds) {
+                              await deactivateInventory(id);
+                            }
+
+                            onDataChange((prev) =>
+                              activeFilter === "active"
+                                ? prev.filter((x) => !selectedIds.has(x.id))
+                                : prev.map((x) =>
+                                    selectedIds.has(x.id)
+                                      ? { ...x, isActive: false }
+                                      : x
+                                  )
+                            );
+
+                            setSelectedIds(new Set());
+                            setConfirm({ open: false });
+                          },
+                        })
+                      }
+                    >
+                      Seçilenleri Sil
+                    </button>
+
+                    <button
+                      className="danger-btn"
+                      onClick={() => {
+                        const idsToDelete = data
+                          .filter((x) => x.isActive)
+                          .map((x) => x.id);
+                        if (!idsToDelete.length) return;
+
+                        setConfirm({
+                          open: true,
+                          title: "Tüm Kayıtlar Silinecek",
+                          message: `${idsToDelete.length} aktif kayıt pasif hale getirilecek. Emin misin?`,
+                          onConfirm: async () => {
+                            try {
+                              for (const id of idsToDelete) {
+                                await deactivateInventory(id);
+                              }
+
+                              onDataChange((prev) =>
+                                activeFilter === "active"
+                                  ? []
+                                  : prev.map((x) =>
+                                      x.isActive ? { ...x, isActive: false } : x
+                                    )
+                              );
+
+                              setSelectedIds(new Set());
+                            } catch (err) {
+                              alert(err.message || "Toplu silme başarısız");
+                            } finally {
+                              setConfirm({ open: false });
+                            }
+                          },
+                        });
+                      }}
+                    >
+                      Tüm Kayıtları Sil
+                    </button>
+                  </>
+                )}
+
+                {(activeFilter === "inactive" || activeFilter === "all") && (
+                  <>
+                    <button
+                      className="success-btn"
+                      disabled={selectedIds.size === 0}
+                      onClick={() =>
+                        setConfirm({
+                          open: true,
+                          title: "Toplu Geri Yükleme",
+                          message: `${selectedIds.size} kayıt tekrar aktif edilecek. Emin misin?`,
+                          onConfirm: async () => {
+                            try {
+                              for (const id of selectedIds) {
+                                await restoreInventory(id);
+                              }
+
+                              onDataChange((prev) =>
+                                activeFilter === "inactive"
+                                  ? prev.filter((x) => !selectedIds.has(x.id))
+                                  : prev.map((x) =>
+                                      selectedIds.has(x.id)
+                                        ? { ...x, isActive: true }
+                                        : x
+                                    )
+                              );
+
+                              setSelectedIds(new Set());
+                            } catch (err) {
+                              alert(
+                                err.message || "Toplu geri yükleme başarısız"
+                              );
+                            } finally {
+                              setConfirm({ open: false });
+                            }
+                          },
+                        })
+                      }
+                    >
+                      Seçilenleri Geri Yükle
+                    </button>
+
+                    <button
+                      className="success-btn"
+                      onClick={() => {
+                        const inactiveIds = data
+                          .filter((x) => !x.isActive)
+                          .map((x) => x.id);
+                        if (!inactiveIds.length) return;
+
+                        setConfirm({
+                          open: true,
+                          title: "Tüm Pasifler Geri Yüklenecek",
+                          message: `${inactiveIds.length} kayıt tekrar aktif edilecek. Emin misin?`,
+                          onConfirm: async () => {
+                            try {
+                              for (const id of inactiveIds) {
+                                await restoreInventory(id);
+                              }
+
+                              onDataChange((prev) =>
+                                activeFilter === "inactive"
+                                  ? []
+                                  : prev.map((x) =>
+                                      !x.isActive ? { ...x, isActive: true } : x
+                                    )
+                              );
+                            } catch (err) {
+                              alert(
+                                err.message || "Toplu geri yükleme başarısız"
+                              );
+                            } finally {
+                              setConfirm({ open: false });
+                            }
+                          },
+                        });
+                      }}
+                    >
+                      Tüm Pasifleri Geri Yükle
+                    </button>
+                  </>
+                )}
+
+                <button
+                  className="outline-btn"
+                  onClick={() => {
+                    setMultiSelectMode(false);
+                    setSelectedIds(new Set());
+                  }}
+                >
+                  İptal
+                </button>
+              </>
+            )}
           </div>
 
           {/* ALT: SEARCH + FILTER */}
@@ -232,6 +467,29 @@ export default function InventoryTable({
       <table className="inventory-table">
         <thead>
           <tr>
+            {multiSelectMode && (
+              <th style={{ width: 40 }}>
+                <input
+                  type="checkbox"
+                  checked={
+                    paginated.length > 0 &&
+                    paginated.every((r) => selectedIds.has(r.id))
+                  }
+                  onChange={(e) => {
+                    const copy = new Set(selectedIds);
+
+                    if (e.target.checked) {
+                      paginated.forEach((r) => copy.add(r.id));
+                    } else {
+                      paginated.forEach((r) => copy.delete(r.id));
+                    }
+
+                    setSelectedIds(copy);
+                  }}
+                />
+              </th>
+            )}
+
             {columns.map((col) => (
               <th key={col.key}>
                 <div className="col-header">
@@ -287,6 +545,26 @@ export default function InventoryTable({
         <tbody>
           {paginated.map((row) => (
             <tr key={row.id} className={!row.isActive ? "inactive-row" : ""}>
+              {multiSelectMode && (
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(row.id)}
+                    onChange={(e) => {
+                      const copy = new Set(selectedIds);
+
+                      if (e.target.checked) {
+                        copy.add(row.id);
+                      } else {
+                        copy.delete(row.id);
+                      }
+
+                      setSelectedIds(copy);
+                    }}
+                  />
+                </td>
+              )}
+
               {columns.map((c) => {
                 const value = normalizeCell(c.key, row[c.key]);
 
@@ -315,7 +593,11 @@ export default function InventoryTable({
               <td className="action-cell">
                 {row.isActive && (
                   <>
-                    <button className="icon-btn edit" data-tooltip="Düzenle">
+                    <button
+                      className="icon-btn edit"
+                      data-tooltip="Düzenle"
+                      onClick={() => onEdit(row)} // 🔥 KRİTİK SATIR
+                    >
                       <img src="/src/assets/icons/edit.png" alt="edit" />
                     </button>
 
@@ -339,7 +621,11 @@ export default function InventoryTable({
                   </button>
                 )}
 
-                <button className="icon-btn history" data-tooltip="Tarihçe">
+                <button
+                  className="icon-btn history"
+                  data-tooltip="Tarihçe"
+                  onClick={() => setOpenHistoryId(row.id)}
+                >
                   <img src="/src/assets/icons/history.png" alt="history" />
                 </button>
               </td>
@@ -362,7 +648,11 @@ export default function InventoryTable({
       <div className="pagination-wrapper">
         {/* ORTA: SAYFALAMA */}
         <div className="pagination">
-          <button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+          <button
+            className="page-btn"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
             ← Önceki
           </button>
 
@@ -371,6 +661,7 @@ export default function InventoryTable({
           </span>
 
           <button
+            className="page-btn"
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
           >
@@ -395,6 +686,20 @@ export default function InventoryTable({
         <DescriptionModal
           text={openDescription}
           onClose={() => setOpenDescription(null)}
+        />
+      )}
+      {openHistoryId && (
+        <InventoryHistoryModal
+          inventoryId={openHistoryId}
+          onClose={() => setOpenHistoryId(null)}
+        />
+      )}
+      {confirm.open && (
+        <ConfirmModal
+          title={confirm.title}
+          message={confirm.message}
+          onCancel={() => setConfirm({ open: false })}
+          onConfirm={confirm.onConfirm}
         />
       )}
     </div>

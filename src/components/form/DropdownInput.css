@@ -1,0 +1,85 @@
+.dropdown-input {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-wrapper input {
+  width: 100%;
+  padding: 10px 36px 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dropdown-wrapper input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* ▼ Ok butonu */
+.dropdown-arrow {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: #374151;
+  padding: 4px;
+}
+
+.dropdown-arrow:hover {
+  color: #2563eb;
+}
+
+/* Açılan liste */
+.dropdown-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  z-index: 1000;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Liste item */
+.dropdown-item {
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.dropdown-item:hover {
+  background-color: #f1f5f9;
+}
+
+/* Scrollbar (opsiyonel ama şık) */
+.dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb {
+  background-color: #cbd5f5;
+  border-radius: 4px;
+}
+
+.dropdown-list::-webkit-scrollbar-track {
+  background-color: transparent;
+}

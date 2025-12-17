@@ -1,0 +1,161 @@
+/* =========================================
+   1. PREMIUM SPINNER (Glow Efektli)
+   ========================================= */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  position: relative;
+  
+  /* Arka plan halkası (Daha silik ve ince) */
+  border: 3px solid rgba(229, 231, 235, 0.5); 
+  
+  /* Dönen kısım (Kurumsal mavi ve belirgin) */
+  border-top: 3px solid #2563eb; 
+  border-right: 3px solid transparent; /* Sağ tarafı şeffaf yaparak kuyruk hissi ver */
+  
+  /* Dönüş animasyonu */
+  animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  
+  /* 🔥 WOW FAKTÖRÜ: Hafif mavi gölge (Glow) */
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.25);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* =========================================
+   2. BUTTON LOADER (Minimalist)
+   ========================================= */
+.button-loader {
+  width: 18px;
+  height: 18px;
+  border-width: 2px; /* Buton içi olduğu için ince */
+  border-style: solid;
+  border-color: currentColor; /* Metin rengini alır */
+  border-bottom-color: transparent !important; /* Altı şeffaf */
+  border-radius: 50%;
+  display: inline-block;
+  animation: spin 0.6s linear infinite; /* Buton içi daha hızlı dönsün */
+  box-shadow: none; /* Butonda gölge olmasın */
+}
+
+/* =========================================
+   3. PAGE LOADER (Tam Ekran & Temiz)
+   ========================================= */
+.page-loader {
+  position: fixed; /* Sayfayı kilitlesin */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background-color: #ffffff;
+  z-index: 9999;
+}
+
+.page-loader span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* =========================================
+   4. INLINE LOADER (Kutu İçi)
+   ========================================= */
+.inline-loader {
+  width: 100%;
+  min-height: 150px; /* Yükseklik verelim ki çökük durmasın */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(249, 250, 251, 0.5);
+  border-radius: 8px;
+}
+
+/* =========================================
+   5. TABLE SKELETON (Daha Belirgin Işıltı)
+   ========================================= */
+.table-loader {
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* Tablo kutusuna gölge */
+}
+
+.table-loader table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 16px; /* Satırları birbirinden ayır */
+}
+
+.table-loader th {
+  padding-bottom: 8px;
+}
+
+.table-loader td {
+  padding: 0 12px;
+}
+
+/* Skeleton Satır Yapısı */
+.skeleton {
+  background-color: #e2e8f0; /* Biraz daha koyu gri zemin */
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.skeleton-header {
+  height: 20px;
+  width: 60%;
+  background-color: #cbd5e1; /* Header daha koyu */
+  margin-bottom: 8px;
+}
+
+.skeleton-cell {
+  height: 48px; /* Daha yüksek satırlar */
+  width: 100%;
+  background-color: #f1f5f9;
+}
+
+/* 🔥 GÜÇLÜ SHIMMER EFEKTİ */
+.skeleton::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Daha keskin beyaz parlama */
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.8) 50%, 
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

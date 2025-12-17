@@ -11,6 +11,10 @@ import editIcon from "../../../assets/icons/edit.png";
 import trashIcon from "../../../assets/icons/trash.png";
 import resetIcon from "../../../assets/icons/reset.png";
 
+// 🔥 Loader Importları
+import TableLoader from "../../../components/Loading/TableLoader";
+import ButtonLoader from "../../../components/Loading/ButtonLoader";
+
 const ROLE_LABEL = {
   Admin: "Admin",
   Constructor: "Constructor",
@@ -24,7 +28,16 @@ export default function UsersModal({ open, onClose }) {
   const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState("active");
   const [editingId, setEditingId] = useState(null);
+  
+  // 🔥 Genel sayfa/tablo yükleniyor mu?
   const [loading, setLoading] = useState(false);
+  
+  // 🔥 Form kaydediliyor mu?
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 🔥 Silme/Geri yükleme işlemi sürüyor mu?
+  const [isConfirming, setIsConfirming] = useState(false);
+
   const [confirm, setConfirm] = useState({
     open: false,
     action: null, // "delete" | "restore"
@@ -41,8 +54,8 @@ export default function UsersModal({ open, onClose }) {
   });
 
   /* =========================
-     KULLANICI LİSTESİ YÜKLE
-     ========================= */
+      KULLANICI LİSTESİ YÜKLE
+      ========================= */
   const loadUsers = async () => {
     try {
       setLoading(true);
@@ -66,8 +79,8 @@ export default function UsersModal({ open, onClose }) {
   }, [open, filter]);
 
   /* =========================
-     FORM
-     ========================= */
+      FORM
+      ========================= */
   const resetForm = () => {
     setEditingId(null);
     setForm({
@@ -86,6 +99,8 @@ export default function UsersModal({ open, onClose }) {
       return;
     }
 
+    // 🔥 Loader Başlat
+    setIsSaving(true);
     try {
       if (editingId) {
         await updateUser(editingId, form);
@@ -97,6 +112,9 @@ export default function UsersModal({ open, onClose }) {
     } catch (err) {
       console.error(err);
       alert("İşlem başarısız");
+    } finally {
+      // 🔥 Loader Durdur
+      setIsSaving(false);
     }
   };
 
@@ -137,7 +155,6 @@ export default function UsersModal({ open, onClose }) {
           <button onClick={onClose}>Kapat</button>
         </div>
 
-        {/* FORM */}
         {/* FORM */}
         <div className="user-form">
           {/* SOL */}
@@ -205,11 +222,26 @@ export default function UsersModal({ open, onClose }) {
               <option value={3}>Viewer</option>
             </select>
 
-            <button className="primary" onClick={handleSave}>
-              {editingId ? "Kullanıcı Güncelle" : "Kullanıcı Kaydet"}
+            <button 
+              className="primary" 
+              onClick={handleSave}
+              disabled={isSaving} // İşlem sürerken tıklanmasın
+            >
+              {/* 🔥 ButtonLoader Entegrasyonu */}
+              {isSaving ? (
+                <ButtonLoader />
+              ) : editingId ? (
+                "Kullanıcı Güncelle"
+              ) : (
+                "Kullanıcı Kaydet"
+              )}
             </button>
 
-            <button className="outline" onClick={resetForm}>
+            <button 
+              className="outline" 
+              onClick={resetForm}
+              disabled={isSaving}
+            >
               Form Temizle
             </button>
           </div>
@@ -221,6 +253,7 @@ export default function UsersModal({ open, onClose }) {
           className="list-filter"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
+          disabled={loading}
         >
           <option value="active">Aktif Kullanıcılar</option>
           <option value="inactive">Silinmiş Kullanıcılar</option>
@@ -230,7 +263,8 @@ export default function UsersModal({ open, onClose }) {
         <div className="users-list-card">
           {/* TABLO */}
           {loading ? (
-            <div className="loading">Yükleniyor...</div>
+             // 🔥 TableLoader Entegrasyonu (4 kolon, 5 satır örnek)
+            <TableLoader columns={4} rows={5} />
           ) : (
             <table className="users-table">
               <thead>
@@ -296,11 +330,21 @@ export default function UsersModal({ open, onClose }) {
                     </td>
                   </tr>
                 ))}
+                
+                {users.length === 0 && !loading && (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: "center", padding: 20 }}>
+                      Kullanıcı bulunamadı.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           )}
         </div>
       </div>
+      
+      {/* ONAY MODALI */}
       {confirm.open && (
         <div className="confirm-backdrop">
           <div className="confirm-modal">
@@ -319,6 +363,7 @@ export default function UsersModal({ open, onClose }) {
             <div className="confirm-actions">
               <button
                 className="outline"
+                disabled={isConfirming}
                 onClick={() =>
                   setConfirm({ open: false, action: null, user: null })
                 }
@@ -328,18 +373,29 @@ export default function UsersModal({ open, onClose }) {
 
               <button
                 className="danger"
+                disabled={isConfirming}
                 onClick={async () => {
-                  if (confirm.action === "delete") {
-                    await passiveUser(confirm.user.id);
-                  } else {
-                    await restoreUser(confirm.user.id);
-                  }
+                  // 🔥 Loader Başlat
+                  setIsConfirming(true);
+                  try {
+                    if (confirm.action === "delete") {
+                      await passiveUser(confirm.user.id);
+                    } else {
+                      await restoreUser(confirm.user.id);
+                    }
 
-                  setConfirm({ open: false, action: null, user: null });
-                  loadUsers();
+                    setConfirm({ open: false, action: null, user: null });
+                    loadUsers();
+                  } catch(e) {
+                      alert("İşlem sırasında hata oluştu.")
+                  } finally {
+                    // 🔥 Loader Durdur
+                    setIsConfirming(false);
+                  }
                 }}
               >
-                Evet, Onaylıyorum
+                {/* 🔥 ButtonLoader Entegrasyonu */}
+                {isConfirming ? <ButtonLoader /> : "Evet, Onaylıyorum"}
               </button>
             </div>
           </div>

@@ -134,3 +134,22 @@ export async function getInventoryHistory(inventoryId) {
 
   return await res.json();
 }
+
+
+/* =========================
+   ADD INVENTORY
+========================= */
+export function addInventory(payload) {
+  return apiFetch("/inventory", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+export function updateInventory(id, payload) {
+  if (!id) throw new Error("ID boş olamaz");
+
+  return apiFetch(`/inventory/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}

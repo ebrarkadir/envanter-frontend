@@ -9,23 +9,40 @@ import {
   getInventories,
 } from "../../../../api/inventoryApi";
 import DescriptionModal from "../../../../components/DescriptionModal";
+import TableLoader from "../../../../components/Loading/TableLoader";
+import ButtonLoader from "../../../../components/Loading/ButtonLoader";
+
 import InventoryHistoryModal from "../history/InventoryHistoryModal";
 import ConfirmModal from "../../../../components/Modal/ConfirmModal";
 
 export default function InventoryTable({
   data = [],
+  loading = false,
   activeFilter,
   onActiveFilterChange,
   onDataChange,
   onEdit,
+  permissions,
 }) {
   const [openFilter, setOpenFilter] = useState(null);
-  // 🔥 DÜZELTME 1: Tıklanan butonun referansını tutmak için state eklendi
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [search, setSearch] = useState("");
   const [openHistoryId, setOpenHistoryId] = useState(null);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+
+  // 🔥 İşlem yapılıyor mu? (Toplu silme/geri yükleme için loader kontrolü)
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const [sort, setSort] = useState({
+    key: null,
+    direction: null,
+  });
+
+  useEffect(() => {
+    setOpenFilter(null);
+    setFilterAnchor(null);
+  }, [sort]);
 
   const [confirm, setConfirm] = useState({
     open: false,
@@ -65,59 +82,80 @@ export default function InventoryTable({
 
   const pageSize = 15;
   const [page, setPage] = useState(1);
+  const [pageInput, setPageInput] = useState(page.toString());
+
+  useEffect(() => {
+    setPageInput(page.toString());
+  }, [page]);
 
   useEffect(() => {
     setPage(1);
-  }, [search, filters, activeFilter]);
+  }, [search, filters, activeFilter, sort]);
+
+  const getDistinct = (key) => {
+    return Array.from(
+      new Set(data.map((x) => x[key]).filter((v) => v && v.trim()))
+    ).sort((a, b) => a.localeCompare(b, "tr", { sensitivity: "base" }));
+  };
 
   const normalizeCell = (key, value) => {
     if (value === null || value === undefined) return "";
-
     if (key === "status") return statusMap[value] || "";
-
     if (key.toLowerCase().includes("date")) {
       const s = value.toString();
       return s.includes("T") ? s.split("T")[0] : s;
     }
-
     return value.toString();
   };
 
   const filteredData = useMemo(() => {
     return data.filter((row) => {
-      // 🔥 1) SEARCH → AND mantığında
       if (search.trim()) {
         const q = search.toLowerCase();
-
         const match = Object.keys(row).some((k) => {
           let v = row[k];
           if (v == null) return false;
-
           if (k === "status") v = statusMap[v] || "";
           if (k.toLowerCase().includes("date") && v) v = v.split("T")[0];
-
           return v.toString().toLowerCase().includes(q);
         });
-
-        if (!match) return false; // 🔥 AND kırılır, search'e uymayanı geç
+        if (!match) return false;
       }
 
-      // 🔥 2) COLUMN FILTERS → AND mantığında
       return columns.every((col) => {
         const selected = filters[col.key];
-        if (!selected.length) return true; // Eğer filtrelenmemişse, geç
-
+        if (!selected.length) return true;
         let value = row[col.key] ?? "";
         if (col.key === "status") value = statusMap[value] || "";
         if (col.key.toLowerCase().includes("date") && value)
           value = value.split("T")[0];
-
-        return selected.includes(value.toString()); // Seçili değeri içeriyorsa geç
+        return selected.includes(value.toString());
       });
     });
   }, [data, search, filters]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
+  const sortedData = useMemo(() => {
+    if (!sort.key || !sort.direction) return filteredData;
+    return [...filteredData].sort((a, b) => {
+      let va = normalizeCell(sort.key, a[sort.key]).trim();
+      let vb = normalizeCell(sort.key, b[sort.key]).trim();
+      const aEmpty = va === "";
+      const bEmpty = vb === "";
+      if (aEmpty && bEmpty) return 0;
+      if (aEmpty) return 1;
+      if (bEmpty) return -1;
+      if (!isNaN(Date.parse(va)) && !isNaN(Date.parse(vb))) {
+        return sort.direction === "asc"
+          ? new Date(va) - new Date(vb)
+          : new Date(vb) - new Date(va);
+      }
+      return sort.direction === "asc"
+        ? va.localeCompare(vb, "tr", { sensitivity: "base" })
+        : vb.localeCompare(va, "tr", { sensitivity: "base" });
+    });
+  }, [filteredData, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / pageSize));
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -126,34 +164,26 @@ export default function InventoryTable({
 
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return filteredData.slice(start, start + pageSize);
-  }, [filteredData, page]);
+    return sortedData.slice(start, start + pageSize);
+  }, [sortedData, page]);
 
   const getOptions = (targetKey) => {
     const set = new Set();
-
     data.forEach((row) => {
-      // 🔥 hedef kolon HARİÇ diğer filtreleri uygula
       const isValid = columns.every((col) => {
         if (col.key === targetKey) return true;
-
         const selected = filters[col.key];
         if (!selected.length) return true;
-
         let value = row[col.key] ?? "";
         if (col.key === "status") value = statusMap[value] || "";
         if (col.key.toLowerCase().includes("date") && value)
           value = value.split("T")[0];
-
         return selected.includes(value.toString());
       });
-
       if (!isValid) return;
-
       const v = normalizeCell(targetKey, row[targetKey]);
       if (v) set.add(v);
     });
-
     return Array.from(set);
   };
 
@@ -168,20 +198,20 @@ export default function InventoryTable({
     setOpenFilter(null);
     setFilterAnchor(null);
   };
+
   const clearAllFilters = () => {
     setFilters(Object.fromEntries(columns.map((c) => [c.key, []])));
     setOpenFilter(null);
     setFilterAnchor(null);
   };
 
-  // Menüyü kapatma fonksiyonu
   const handleCloseFilter = () => {
     setOpenFilter(null);
     setFilterAnchor(null);
   };
 
   /* =========================
-      DELETE / RESTORE HANDLERS
+     DELETE / RESTORE HANDLERS
      ========================= */
   const handleDeactivate = (id) => {
     setConfirm({
@@ -191,7 +221,6 @@ export default function InventoryTable({
       onConfirm: async () => {
         try {
           await deactivateInventory(id);
-
           onDataChange((prev) => {
             if (activeFilter === "active") {
               return prev.filter((x) => x.id !== id);
@@ -217,12 +246,10 @@ export default function InventoryTable({
       onConfirm: async () => {
         try {
           await restoreInventory(id);
-
           onDataChange((prev) => {
             if (activeFilter === "inactive") {
               return prev.filter((x) => x.id !== id);
             }
-
             return prev.map((x) =>
               x.id === id ? { ...x, isActive: true } : x
             );
@@ -242,7 +269,7 @@ export default function InventoryTable({
         {/* SOL */}
         <div className="inventory-title">
           <h2>Envanter Listesi</h2>
-          <span className="inventory-count">{filteredData.length}</span>
+          <span className="inventory-count">{sortedData.length}</span>
         </div>
 
         <div className="inventory-right">
@@ -252,19 +279,23 @@ export default function InventoryTable({
               <>
                 <InventoryExportButton activeFilter={activeFilter} />
 
-                <InventoryImportButton
-                  onImported={async () => {
-                    const freshData = await getInventories(activeFilter);
-                    onDataChange(() => freshData);
-                  }}
-                />
+                {permissions.canEdit && (
+                  <InventoryImportButton
+                    onImported={async () => {
+                      const freshData = await getInventories(activeFilter);
+                      onDataChange(() => freshData);
+                    }}
+                  />
+                )}
 
-                <button
-                  className="multiple-btn"
-                  onClick={() => setMultiSelectMode(true)}
-                >
-                  Çoklu Seçim
-                </button>
+                {permissions.canDelete && (
+                  <button
+                    className="multiple-btn"
+                    onClick={() => setMultiSelectMode(true)}
+                  >
+                    Çoklu Seçim
+                  </button>
+                )}
               </>
             )}
 
@@ -275,38 +306,47 @@ export default function InventoryTable({
                   <>
                     <button
                       className="danger-btn"
-                      disabled={selectedIds.size === 0}
+                      // isProcessing true ise butonu disable et
+                      disabled={selectedIds.size === 0 || isProcessing}
                       onClick={() =>
                         setConfirm({
                           open: true,
                           title: "Toplu Silme",
                           message: `${selectedIds.size} kayıt pasif hale getirilecek. Emin misin?`,
                           onConfirm: async () => {
-                            for (const id of selectedIds) {
-                              await deactivateInventory(id);
+                            // 🔥 Loader Başlat
+                            setIsProcessing(true);
+                            try {
+                              for (const id of selectedIds) {
+                                await deactivateInventory(id);
+                              }
+
+                              onDataChange((prev) =>
+                                activeFilter === "active"
+                                  ? prev.filter((x) => !selectedIds.has(x.id))
+                                  : prev.map((x) =>
+                                      selectedIds.has(x.id)
+                                        ? { ...x, isActive: false }
+                                        : x
+                                    )
+                              );
+                              setSelectedIds(new Set());
+                            } finally {
+                              // 🔥 Loader Durdur
+                              setIsProcessing(false);
+                              setConfirm({ open: false });
                             }
-
-                            onDataChange((prev) =>
-                              activeFilter === "active"
-                                ? prev.filter((x) => !selectedIds.has(x.id))
-                                : prev.map((x) =>
-                                    selectedIds.has(x.id)
-                                      ? { ...x, isActive: false }
-                                      : x
-                                  )
-                            );
-
-                            setSelectedIds(new Set());
-                            setConfirm({ open: false });
                           },
                         })
                       }
                     >
-                      Seçilenleri Sil
+                      {/* 🔥 ButtonLoader Eklendi */}
+                      {isProcessing ? <ButtonLoader /> : "Seçilenleri Sil"}
                     </button>
 
                     <button
                       className="danger-btn"
+                      disabled={isProcessing}
                       onClick={() => {
                         const idsToDelete = data
                           .filter((x) => x.isActive)
@@ -318,11 +358,11 @@ export default function InventoryTable({
                           title: "Tüm Kayıtlar Silinecek",
                           message: `${idsToDelete.length} aktif kayıt pasif hale getirilecek. Emin misin?`,
                           onConfirm: async () => {
+                            setIsProcessing(true);
                             try {
                               for (const id of idsToDelete) {
                                 await deactivateInventory(id);
                               }
-
                               onDataChange((prev) =>
                                 activeFilter === "active"
                                   ? []
@@ -330,18 +370,18 @@ export default function InventoryTable({
                                       x.isActive ? { ...x, isActive: false } : x
                                     )
                               );
-
                               setSelectedIds(new Set());
                             } catch (err) {
                               alert(err.message || "Toplu silme başarısız");
                             } finally {
+                              setIsProcessing(false);
                               setConfirm({ open: false });
                             }
                           },
                         });
                       }}
                     >
-                      Tüm Kayıtları Sil
+                      {isProcessing ? <ButtonLoader /> : "Tüm Kayıtları Sil"}
                     </button>
                   </>
                 )}
@@ -350,18 +390,18 @@ export default function InventoryTable({
                   <>
                     <button
                       className="success-btn"
-                      disabled={selectedIds.size === 0}
+                      disabled={selectedIds.size === 0 || isProcessing}
                       onClick={() =>
                         setConfirm({
                           open: true,
                           title: "Toplu Geri Yükleme",
                           message: `${selectedIds.size} kayıt tekrar aktif edilecek. Emin misin?`,
                           onConfirm: async () => {
+                            setIsProcessing(true);
                             try {
                               for (const id of selectedIds) {
                                 await restoreInventory(id);
                               }
-
                               onDataChange((prev) =>
                                 activeFilter === "inactive"
                                   ? prev.filter((x) => !selectedIds.has(x.id))
@@ -371,24 +411,29 @@ export default function InventoryTable({
                                         : x
                                     )
                               );
-
                               setSelectedIds(new Set());
                             } catch (err) {
                               alert(
                                 err.message || "Toplu geri yükleme başarısız"
                               );
                             } finally {
+                              setIsProcessing(false);
                               setConfirm({ open: false });
                             }
                           },
                         })
                       }
                     >
-                      Seçilenleri Geri Yükle
+                      {isProcessing ? (
+                        <ButtonLoader />
+                      ) : (
+                        "Seçilenleri Geri Yükle"
+                      )}
                     </button>
 
                     <button
                       className="success-btn"
+                      disabled={isProcessing}
                       onClick={() => {
                         const inactiveIds = data
                           .filter((x) => !x.isActive)
@@ -400,11 +445,11 @@ export default function InventoryTable({
                           title: "Tüm Pasifler Geri Yüklenecek",
                           message: `${inactiveIds.length} kayıt tekrar aktif edilecek. Emin misin?`,
                           onConfirm: async () => {
+                            setIsProcessing(true);
                             try {
                               for (const id of inactiveIds) {
                                 await restoreInventory(id);
                               }
-
                               onDataChange((prev) =>
                                 activeFilter === "inactive"
                                   ? []
@@ -417,19 +462,25 @@ export default function InventoryTable({
                                 err.message || "Toplu geri yükleme başarısız"
                               );
                             } finally {
+                              setIsProcessing(false);
                               setConfirm({ open: false });
                             }
                           },
                         });
                       }}
                     >
-                      Tüm Pasifleri Geri Yükle
+                      {isProcessing ? (
+                        <ButtonLoader />
+                      ) : (
+                        "Tüm Pasifleri Geri Yükle"
+                      )}
                     </button>
                   </>
                 )}
 
                 <button
                   className="outline-btn"
+                  disabled={isProcessing}
                   onClick={() => {
                     setMultiSelectMode(false);
                     setSelectedIds(new Set());
@@ -441,7 +492,6 @@ export default function InventoryTable({
             )}
           </div>
 
-          {/* ALT: SEARCH + FILTER */}
           <div className="inventory-filters">
             <input
               className="global-search"
@@ -463,225 +513,283 @@ export default function InventoryTable({
           </div>
         </div>
       </div>
-
-      <table className="inventory-table">
-        <thead>
-          <tr>
-            {multiSelectMode && (
-              <th style={{ width: 40 }}>
-                <input
-                  type="checkbox"
-                  checked={
-                    paginated.length > 0 &&
-                    paginated.every((r) => selectedIds.has(r.id))
-                  }
-                  onChange={(e) => {
-                    const copy = new Set(selectedIds);
-
-                    if (e.target.checked) {
-                      paginated.forEach((r) => copy.add(r.id));
-                    } else {
-                      paginated.forEach((r) => copy.delete(r.id));
-                    }
-
-                    setSelectedIds(copy);
-                  }}
-                />
-              </th>
-            )}
-
-            {columns.map((col) => (
-              <th key={col.key}>
-                <div className="col-header">
-                  <span>{col.label}</span>
-                  <button
-                    className="filter-btn"
-                    onClick={(e) => {
-                      // 🔥 DÜZELTME 2: Anchor element (buton) referansını set ediyoruz
-                      if (openFilter === col.key) {
-                        handleCloseFilter();
-                      } else {
-                        setOpenFilter(col.key);
-                        setFilterAnchor(e.currentTarget); // <-- ÖNEMLİ: Butonu kaydet
+          <table className="inventory-table">
+            <thead>
+              <tr>
+                {multiSelectMode && (
+                  <th style={{ width: 40 }}>
+                    <input
+                      type="checkbox"
+                      checked={
+                        paginated.length > 0 &&
+                        paginated.every((r) => selectedIds.has(r.id))
                       }
-                    }}
-                  >
-                    ▼
-                  </button>
-                  {openFilter === col.key && (
-                    <ColumnFilter
-                      title={col.label}
-                      options={getOptions(col.key)}
-                      selected={filters[col.key]}
-                      // 🔥 DÜZELTME 3: Anchor prop'unu pass ediyoruz
-                      anchorRef={filterAnchor}
-                      onChange={(v) => applyFilter(col.key, v)}
-                      onClear={() => clearFilter(col.key)}
-                      onClose={handleCloseFilter}
+                      onChange={(e) => {
+                        const copy = new Set(selectedIds);
+                        if (e.target.checked) {
+                          paginated.forEach((r) => copy.add(r.id));
+                        } else {
+                          paginated.forEach((r) => copy.delete(r.id));
+                        }
+                        setSelectedIds(copy);
+                      }}
                     />
-                  )}
-                </div>
-              </th>
-            ))}
-            <th>
-              <div
-                className="col-header"
-                style={{ flexDirection: "column", gap: 6 }}
-              >
-                <span>İşlem</span>
+                  </th>
+                )}
 
-                <button
-                  className="clear-filters-btn"
-                  onClick={clearAllFilters}
-                  title="Tüm filtreleri temizle"
-                >
-                  Filtreleri Temizle
-                </button>
-              </div>
-            </th>
-          </tr>
-        </thead>
+                {columns.map((col) => (
+                  <th key={col.key}>
+                    <div className="col-header">
+                      <span
+                        className="sortable-header"
+                        title="Sıralamak için tıkla"
+                        onClick={() => {
+                          setSort((prev) => {
+                            if (prev.key !== col.key)
+                              return { key: col.key, direction: "asc" };
+                            if (prev.direction === "asc")
+                              return { key: col.key, direction: "desc" };
+                            return { key: null, direction: null };
+                          });
+                        }}
+                      >
+                        {col.label}
+                        {sort.key === col.key && (
+                          <span className="sort-indicator">
+                            {sort.direction === "asc" ? " ▲" : " ▼"}
+                          </span>
+                        )}
+                      </span>
 
-        <tbody>
-          {paginated.map((row) => (
-            <tr key={row.id} className={!row.isActive ? "inactive-row" : ""}>
-              {multiSelectMode && (
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(row.id)}
-                    onChange={(e) => {
-                      const copy = new Set(selectedIds);
+                      <button
+                        className="filter-btn"
+                        onClick={(e) => {
+                          if (openFilter === col.key) {
+                            handleCloseFilter();
+                          } else {
+                            setOpenFilter(col.key);
+                            setFilterAnchor(e.currentTarget);
+                          }
+                        }}
+                      >
+                        ▼
+                      </button>
 
-                      if (e.target.checked) {
-                        copy.add(row.id);
-                      } else {
-                        copy.delete(row.id);
-                      }
+                      {openFilter === col.key && (
+                        <ColumnFilter
+                          title={col.label}
+                          options={getOptions(col.key)}
+                          selected={filters[col.key]}
+                          anchorRef={filterAnchor}
+                          onChange={(v) => applyFilter(col.key, v)}
+                          onClear={() => clearFilter(col.key)}
+                          onClose={handleCloseFilter}
+                        />
+                      )}
+                    </div>
+                  </th>
+                ))}
 
-                      setSelectedIds(copy);
-                    }}
-                  />
-                </td>
+                <th>
+                  <div
+                    className="col-header"
+                    style={{ flexDirection: "column", gap: 6 }}
+                  >
+                    <span>İşlem</span>
+                    <button
+                      className="clear-filters-btn"
+                      onClick={clearAllFilters}
+                      title="Tüm filtreleri temizle"
+                    >
+                      Filtreleri Temizle
+                    </button>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {/* 🔄 LOADING DURUMU */}
+              {loading && (
+                <tr>
+                  <td colSpan={columns.length + (multiSelectMode ? 1 : 0) + 1}>
+                    <TableLoader />
+                  </td>
+                </tr>
               )}
 
-              {columns.map((c) => {
-                const value = normalizeCell(c.key, row[c.key]);
-
-                if (c.key === "description" && value.length > 20) {
-                  return (
-                    <td key={c.key}>
-                      {value.slice(0, 10)}…
-                      <span
-                        style={{
-                          color: "#2563eb",
-                          cursor: "pointer",
-                          marginLeft: 6,
-                          fontSize: 12,
-                        }}
-                        onClick={() => setOpenDescription(value)}
-                      >
-                        Devamını Gör
-                      </span>
-                    </td>
-                  );
-                }
-
-                return <td key={c.key}>{value}</td>;
-              })}
-
-              <td className="action-cell">
-                {row.isActive && (
-                  <>
-                    <button
-                      className="icon-btn edit"
-                      data-tooltip="Düzenle"
-                      onClick={() => onEdit(row)} // 🔥 KRİTİK SATIR
-                    >
-                      <img src="/src/assets/icons/edit.png" alt="edit" />
-                    </button>
-
-                    <button
-                      className="icon-btn delete"
-                      data-tooltip="Pasife Al"
-                      onClick={() => handleDeactivate(row.id)}
-                    >
-                      <img src="/src/assets/icons/trash.png" alt="delete" />
-                    </button>
-                  </>
-                )}
-
-                {!row.isActive && (
-                  <button
-                    className="icon-btn restore"
-                    data-tooltip="Geri Yükle"
-                    onClick={() => handleRestore(row.id)}
+              {/* 📦 DATA */}
+              {!loading &&
+                paginated.map((row) => (
+                  <tr
+                    key={row.id}
+                    className={!row.isActive ? "inactive-row" : ""}
                   >
-                    <img src="/src/assets/icons/reset.png" alt="restore" />
-                  </button>
-                )}
+                    {multiSelectMode && (
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(row.id)}
+                          onChange={(e) => {
+                            const copy = new Set(selectedIds);
+                            e.target.checked
+                              ? copy.add(row.id)
+                              : copy.delete(row.id);
+                            setSelectedIds(copy);
+                          }}
+                        />
+                      </td>
+                    )}
 
-                <button
-                  className="icon-btn history"
-                  data-tooltip="Tarihçe"
-                  onClick={() => setOpenHistoryId(row.id)}
-                >
-                  <img src="/src/assets/icons/history.png" alt="history" />
-                </button>
-              </td>
-            </tr>
-          ))}
+                    {columns.map((c) => {
+                      const value = normalizeCell(c.key, row[c.key]);
 
-          {paginated.length === 0 && (
-            <tr>
-              <td
-                colSpan={columns.length + 1}
-                style={{ textAlign: "center", padding: 24 }}
+                      if (c.key === "description" && value.length > 20) {
+                        return (
+                          <td key={c.key}>
+                            {value.slice(0, 10)}…
+                            <span
+                              style={{
+                                color: "#2563eb",
+                                cursor: "pointer",
+                                marginLeft: 6,
+                                fontSize: 12,
+                              }}
+                              onClick={() => setOpenDescription(value)}
+                            >
+                              Devamını Gör
+                            </span>
+                          </td>
+                        );
+                      }
+
+                      return <td key={c.key}>{value}</td>;
+                    })}
+
+                    <td className="action-cell">
+                      {row.isActive && permissions.canEdit && (
+                        <button
+                          className="icon-btn edit"
+                          data-tooltip="Düzenle"
+                          onClick={() => onEdit(row)}
+                        >
+                          <img src="/src/assets/icons/edit.png" alt="edit" />
+                        </button>
+                      )}
+
+                      {row.isActive && permissions.canDelete && (
+                        <button
+                          className="icon-btn delete"
+                          data-tooltip="Pasife Al"
+                          onClick={() => handleDeactivate(row.id)}
+                        >
+                          <img src="/src/assets/icons/trash.png" alt="delete" />
+                        </button>
+                      )}
+
+                      {!row.isActive && permissions.canRestore && (
+                        <button
+                          className="icon-btn restore"
+                          data-tooltip="Geri Yükle"
+                          onClick={() => handleRestore(row.id)}
+                        >
+                          <img
+                            src="/src/assets/icons/reset.png"
+                            alt="restore"
+                          />
+                        </button>
+                      )}
+
+                      <button
+                        className="icon-btn history"
+                        data-tooltip="Tarihçe"
+                        onClick={() => setOpenHistoryId(row.id)}
+                      >
+                        <img
+                          src="/src/assets/icons/history.png"
+                          alt="history"
+                        />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+              {/* ❌ BOŞ DATA */}
+              {!loading && paginated.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={columns.length + (multiSelectMode ? 1 : 0) + 1}
+                    style={{ textAlign: "center", padding: 24 }}
+                  >
+                    Kayıt bulunamadı.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          {/* Pagination sadece tablo yüklüyken görünsün */}
+          <div className="pagination-wrapper">
+            <div className="pagination">
+              <button
+                className="page-btn"
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
               >
-                Kayıt bulunamadı.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                ← Önceki
+              </button>
 
-      <div className="pagination-wrapper">
-        {/* ORTA: SAYFALAMA */}
-        <div className="pagination">
-          <button
-            className="page-btn"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            ← Önceki
-          </button>
+              <div className="page-jump">
+                <span>Sayfa</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={pageInput}
+                  onChange={(e) => setPageInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      let target = Number(pageInput);
+                      if (isNaN(target)) {
+                        setPageInput(page.toString());
+                        return;
+                      }
+                      if (target < 1) target = 1;
+                      if (target > totalPages) target = totalPages;
+                      setPage(target);
+                    }
+                  }}
+                  onBlur={() => setPageInput(page.toString())}
+                  className="page-input"
+                />
+                <span>/ {totalPages}</span>
+              </div>
 
-          <span>
-            Sayfa {page} / {totalPages}
-          </span>
+              <button
+                className="page-btn"
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Sonraki →
+              </button>
+            </div>
 
-          <button
-            className="page-btn"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Sonraki →
-          </button>
-        </div>
-
-        <div className="pagination-info">
-          {filteredData.length === 0 ? (
-            "0 kayıttan 0–0 arası görüntüleniyor"
-          ) : (
-            <>
-              <strong>{filteredData.length}</strong> kayıttan{" "}
-              <strong>{(page - 1) * pageSize + 1}</strong>–{" "}
-              <strong>{Math.min(page * pageSize, filteredData.length)}</strong>{" "}
-              arası görüntüleniyor
-            </>
-          )}
-        </div>
-      </div>
+            <div className="pagination-info">
+              {filteredData.length === 0 ? (
+                "0 kayıttan 0–0 arası görüntüleniyor"
+              ) : (
+                <>
+                  <strong>{filteredData.length}</strong> kayıttan{" "}
+                  <strong>{(page - 1) * pageSize + 1}</strong>–{" "}
+                  <strong>
+                    {Math.min(page * pageSize, filteredData.length)}
+                  </strong>{" "}
+                  arası görüntüleniyor
+                </>
+              )}
+            </div>
+          </div>
+      
       {openDescription && (
         <DescriptionModal
           text={openDescription}

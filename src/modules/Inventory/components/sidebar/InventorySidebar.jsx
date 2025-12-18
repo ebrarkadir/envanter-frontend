@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import "./InventorySidebar.css";
 import DropdownInput from "../../../../components/form/Dropdown.Input";
 
-
 /* =========================
    STATUS ENUM OPTIONS
 ========================= */
@@ -36,6 +35,7 @@ export default function InventorySidebar({
   editingItem,
   onToggle,
   onSave,
+  onClearEdit,
   options,
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
@@ -102,8 +102,7 @@ export default function InventorySidebar({
 
   const handleClear = () => {
     setForm(EMPTY_FORM);
-
-    onToggle();
+    onClearEdit(); // 🔥 editingItem = null
   };
 
   return (
@@ -129,7 +128,6 @@ export default function InventorySidebar({
         </div>
 
         <div className="form-group">
-          
           <DropdownInput
             label="Marka"
             value={form.brand}

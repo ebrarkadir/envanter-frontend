@@ -3,6 +3,10 @@ import ColumnFilter from "./ColumnFilter";
 import "../../styles/table.css";
 import InventoryExportButton from "../inventory/InventoryExportButton";
 import InventoryImportButton from "../inventory/InventoryImportButton";
+import editIcon from "../../../../assets/icons/edit.png";
+import trashIcon from "../../../../assets/icons/trash.png";
+import resetIcon from "../../../../assets/icons/reset.png";
+import historyIcon from "../../../../assets/icons/history.png";
 import {
   deactivateInventory,
   restoreInventory,
@@ -513,283 +517,272 @@ export default function InventoryTable({
           </div>
         </div>
       </div>
-          <table className="inventory-table">
-            <thead>
-              <tr>
+      <table className="inventory-table">
+        <thead>
+          <tr>
+            {multiSelectMode && (
+              <th style={{ width: 40 }}>
+                <input
+                  type="checkbox"
+                  checked={
+                    paginated.length > 0 &&
+                    paginated.every((r) => selectedIds.has(r.id))
+                  }
+                  onChange={(e) => {
+                    const copy = new Set(selectedIds);
+                    if (e.target.checked) {
+                      paginated.forEach((r) => copy.add(r.id));
+                    } else {
+                      paginated.forEach((r) => copy.delete(r.id));
+                    }
+                    setSelectedIds(copy);
+                  }}
+                />
+              </th>
+            )}
+
+            {columns.map((col) => (
+              <th key={col.key}>
+                <div className="col-header">
+                  <span
+                    className="sortable-header"
+                    title="Sıralamak için tıkla"
+                    onClick={() => {
+                      setSort((prev) => {
+                        if (prev.key !== col.key)
+                          return { key: col.key, direction: "asc" };
+                        if (prev.direction === "asc")
+                          return { key: col.key, direction: "desc" };
+                        return { key: null, direction: null };
+                      });
+                    }}
+                  >
+                    {col.label}
+                    {sort.key === col.key && (
+                      <span className="sort-indicator">
+                        {sort.direction === "asc" ? " ▲" : " ▼"}
+                      </span>
+                    )}
+                  </span>
+
+                  <button
+                    className="filter-btn"
+                    onClick={(e) => {
+                      if (openFilter === col.key) {
+                        handleCloseFilter();
+                      } else {
+                        setOpenFilter(col.key);
+                        setFilterAnchor(e.currentTarget);
+                      }
+                    }}
+                  >
+                    ▼
+                  </button>
+
+                  {openFilter === col.key && (
+                    <ColumnFilter
+                      title={col.label}
+                      options={getOptions(col.key)}
+                      selected={filters[col.key]}
+                      anchorRef={filterAnchor}
+                      onChange={(v) => applyFilter(col.key, v)}
+                      onClear={() => clearFilter(col.key)}
+                      onClose={handleCloseFilter}
+                    />
+                  )}
+                </div>
+              </th>
+            ))}
+
+            <th>
+              <div
+                className="col-header"
+                style={{ flexDirection: "column", gap: 6 }}
+              >
+                <span>İşlem</span>
+                <button
+                  className="clear-filters-btn"
+                  onClick={clearAllFilters}
+                  title="Tüm filtreleri temizle"
+                >
+                  Filtreleri Temizle
+                </button>
+              </div>
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {/* 🔄 LOADING DURUMU */}
+          {loading && (
+            <tr>
+              <td colSpan={columns.length + (multiSelectMode ? 1 : 0) + 1}>
+                <TableLoader />
+              </td>
+            </tr>
+          )}
+
+          {/* 📦 DATA */}
+          {!loading &&
+            paginated.map((row) => (
+              <tr key={row.id} className={!row.isActive ? "inactive-row" : ""}>
                 {multiSelectMode && (
-                  <th style={{ width: 40 }}>
+                  <td>
                     <input
                       type="checkbox"
-                      checked={
-                        paginated.length > 0 &&
-                        paginated.every((r) => selectedIds.has(r.id))
-                      }
+                      checked={selectedIds.has(row.id)}
                       onChange={(e) => {
                         const copy = new Set(selectedIds);
-                        if (e.target.checked) {
-                          paginated.forEach((r) => copy.add(r.id));
-                        } else {
-                          paginated.forEach((r) => copy.delete(r.id));
-                        }
+                        e.target.checked
+                          ? copy.add(row.id)
+                          : copy.delete(row.id);
                         setSelectedIds(copy);
                       }}
                     />
-                  </th>
+                  </td>
                 )}
 
-                {columns.map((col) => (
-                  <th key={col.key}>
-                    <div className="col-header">
-                      <span
-                        className="sortable-header"
-                        title="Sıralamak için tıkla"
-                        onClick={() => {
-                          setSort((prev) => {
-                            if (prev.key !== col.key)
-                              return { key: col.key, direction: "asc" };
-                            if (prev.direction === "asc")
-                              return { key: col.key, direction: "desc" };
-                            return { key: null, direction: null };
-                          });
-                        }}
-                      >
-                        {col.label}
-                        {sort.key === col.key && (
-                          <span className="sort-indicator">
-                            {sort.direction === "asc" ? " ▲" : " ▼"}
-                          </span>
-                        )}
-                      </span>
+                {columns.map((c) => {
+                  const value = normalizeCell(c.key, row[c.key]);
 
-                      <button
-                        className="filter-btn"
-                        onClick={(e) => {
-                          if (openFilter === col.key) {
-                            handleCloseFilter();
-                          } else {
-                            setOpenFilter(col.key);
-                            setFilterAnchor(e.currentTarget);
-                          }
-                        }}
-                      >
-                        ▼
-                      </button>
-
-                      {openFilter === col.key && (
-                        <ColumnFilter
-                          title={col.label}
-                          options={getOptions(col.key)}
-                          selected={filters[col.key]}
-                          anchorRef={filterAnchor}
-                          onChange={(v) => applyFilter(col.key, v)}
-                          onClear={() => clearFilter(col.key)}
-                          onClose={handleCloseFilter}
-                        />
-                      )}
-                    </div>
-                  </th>
-                ))}
-
-                <th>
-                  <div
-                    className="col-header"
-                    style={{ flexDirection: "column", gap: 6 }}
-                  >
-                    <span>İşlem</span>
-                    <button
-                      className="clear-filters-btn"
-                      onClick={clearAllFilters}
-                      title="Tüm filtreleri temizle"
-                    >
-                      Filtreleri Temizle
-                    </button>
-                  </div>
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {/* 🔄 LOADING DURUMU */}
-              {loading && (
-                <tr>
-                  <td colSpan={columns.length + (multiSelectMode ? 1 : 0) + 1}>
-                    <TableLoader />
-                  </td>
-                </tr>
-              )}
-
-              {/* 📦 DATA */}
-              {!loading &&
-                paginated.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={!row.isActive ? "inactive-row" : ""}
-                  >
-                    {multiSelectMode && (
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(row.id)}
-                          onChange={(e) => {
-                            const copy = new Set(selectedIds);
-                            e.target.checked
-                              ? copy.add(row.id)
-                              : copy.delete(row.id);
-                            setSelectedIds(copy);
+                  if (c.key === "description" && value.length > 20) {
+                    return (
+                      <td key={c.key}>
+                        {value.slice(0, 10)}…
+                        <span
+                          style={{
+                            color: "#2563eb",
+                            cursor: "pointer",
+                            marginLeft: 6,
+                            fontSize: 12,
                           }}
-                        />
+                          onClick={() => setOpenDescription(value)}
+                        >
+                          Devamını Gör
+                        </span>
                       </td>
-                    )}
+                    );
+                  }
 
-                    {columns.map((c) => {
-                      const value = normalizeCell(c.key, row[c.key]);
+                  return <td key={c.key}>{value}</td>;
+                })}
 
-                      if (c.key === "description" && value.length > 20) {
-                        return (
-                          <td key={c.key}>
-                            {value.slice(0, 10)}…
-                            <span
-                              style={{
-                                color: "#2563eb",
-                                cursor: "pointer",
-                                marginLeft: 6,
-                                fontSize: 12,
-                              }}
-                              onClick={() => setOpenDescription(value)}
-                            >
-                              Devamını Gör
-                            </span>
-                          </td>
-                        );
-                      }
+                <td className="action-cell">
+                  {row.isActive && permissions.canEdit && (
+                    <button
+                      className="icon-btn edit"
+                      data-tooltip="Düzenle"
+                      onClick={() => onEdit(row)}
+                    >
+                      <img src={editIcon} alt="edit" />
+                    </button>
+                  )}
 
-                      return <td key={c.key}>{value}</td>;
-                    })}
+                  {row.isActive && permissions.canDelete && (
+                    <button
+                      className="icon-btn delete"
+                      data-tooltip="Pasife Al"
+                      onClick={() => handleDeactivate(row.id)}
+                    >
+                      <img src={trashIcon} alt="delete" />
+                    </button>
+                  )}
 
-                    <td className="action-cell">
-                      {row.isActive && permissions.canEdit && (
-                        <button
-                          className="icon-btn edit"
-                          data-tooltip="Düzenle"
-                          onClick={() => onEdit(row)}
-                        >
-                          <img src="/src/assets/icons/edit.png" alt="edit" />
-                        </button>
-                      )}
+                  {!row.isActive && permissions.canRestore && (
+                    <button
+                      className="icon-btn restore"
+                      data-tooltip="Geri Yükle"
+                      onClick={() => handleRestore(row.id)}
+                    >
+                      <img src={resetIcon} alt="restore" />
+                    </button>
+                  )}
 
-                      {row.isActive && permissions.canDelete && (
-                        <button
-                          className="icon-btn delete"
-                          data-tooltip="Pasife Al"
-                          onClick={() => handleDeactivate(row.id)}
-                        >
-                          <img src="/src/assets/icons/trash.png" alt="delete" />
-                        </button>
-                      )}
-
-                      {!row.isActive && permissions.canRestore && (
-                        <button
-                          className="icon-btn restore"
-                          data-tooltip="Geri Yükle"
-                          onClick={() => handleRestore(row.id)}
-                        >
-                          <img
-                            src="/src/assets/icons/reset.png"
-                            alt="restore"
-                          />
-                        </button>
-                      )}
-
-                      <button
-                        className="icon-btn history"
-                        data-tooltip="Tarihçe"
-                        onClick={() => setOpenHistoryId(row.id)}
-                      >
-                        <img
-                          src="/src/assets/icons/history.png"
-                          alt="history"
-                        />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-
-              {/* ❌ BOŞ DATA */}
-              {!loading && paginated.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={columns.length + (multiSelectMode ? 1 : 0) + 1}
-                    style={{ textAlign: "center", padding: 24 }}
+                  <button
+                    className="icon-btn history"
+                    data-tooltip="Tarihçe"
+                    onClick={() => setOpenHistoryId(row.id)}
                   >
-                    Kayıt bulunamadı.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                    <img src={historyIcon} alt="history" />
+                  </button>
+                </td>
+              </tr>
+            ))}
 
-          {/* Pagination sadece tablo yüklüyken görünsün */}
-          <div className="pagination-wrapper">
-            <div className="pagination">
-              <button
-                className="page-btn"
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
+          {/* ❌ BOŞ DATA */}
+          {!loading && paginated.length === 0 && (
+            <tr>
+              <td
+                colSpan={columns.length + (multiSelectMode ? 1 : 0) + 1}
+                style={{ textAlign: "center", padding: 24 }}
               >
-                ← Önceki
-              </button>
+                Kayıt bulunamadı.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
 
-              <div className="page-jump">
-                <span>Sayfa</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={totalPages}
-                  value={pageInput}
-                  onChange={(e) => setPageInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      let target = Number(pageInput);
-                      if (isNaN(target)) {
-                        setPageInput(page.toString());
-                        return;
-                      }
-                      if (target < 1) target = 1;
-                      if (target > totalPages) target = totalPages;
-                      setPage(target);
-                    }
-                  }}
-                  onBlur={() => setPageInput(page.toString())}
-                  className="page-input"
-                />
-                <span>/ {totalPages}</span>
-              </div>
+      {/* Pagination sadece tablo yüklüyken görünsün */}
+      <div className="pagination-wrapper">
+        <div className="pagination">
+          <button
+            className="page-btn"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            ← Önceki
+          </button>
 
-              <button
-                className="page-btn"
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Sonraki →
-              </button>
-            </div>
-
-            <div className="pagination-info">
-              {filteredData.length === 0 ? (
-                "0 kayıttan 0–0 arası görüntüleniyor"
-              ) : (
-                <>
-                  <strong>{filteredData.length}</strong> kayıttan{" "}
-                  <strong>{(page - 1) * pageSize + 1}</strong>–{" "}
-                  <strong>
-                    {Math.min(page * pageSize, filteredData.length)}
-                  </strong>{" "}
-                  arası görüntüleniyor
-                </>
-              )}
-            </div>
+          <div className="page-jump">
+            <span>Sayfa</span>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={pageInput}
+              onChange={(e) => setPageInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  let target = Number(pageInput);
+                  if (isNaN(target)) {
+                    setPageInput(page.toString());
+                    return;
+                  }
+                  if (target < 1) target = 1;
+                  if (target > totalPages) target = totalPages;
+                  setPage(target);
+                }
+              }}
+              onBlur={() => setPageInput(page.toString())}
+              className="page-input"
+            />
+            <span>/ {totalPages}</span>
           </div>
-      
+
+          <button
+            className="page-btn"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Sonraki →
+          </button>
+        </div>
+
+        <div className="pagination-info">
+          {filteredData.length === 0 ? (
+            "0 kayıttan 0–0 arası görüntüleniyor"
+          ) : (
+            <>
+              <strong>{filteredData.length}</strong> kayıttan{" "}
+              <strong>{(page - 1) * pageSize + 1}</strong>–{" "}
+              <strong>{Math.min(page * pageSize, filteredData.length)}</strong>{" "}
+              arası görüntüleniyor
+            </>
+          )}
+        </div>
+      </div>
+
       {openDescription && (
         <DescriptionModal
           text={openDescription}

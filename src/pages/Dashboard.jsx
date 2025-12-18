@@ -145,6 +145,7 @@ export default function Dashboard() {
               editingItem={editingItem}
               onToggle={() => setIsSidebarOpen((p) => !p)}
               onSave={handleSave}
+              onClearEdit={() => setEditingItem(null)}
               options={sidebarOptions}
             />
           )}

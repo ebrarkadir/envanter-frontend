@@ -6,6 +6,7 @@ import DropdownInput from "../../../../components/form/Dropdown.Input";
    STATUS ENUM OPTIONS
 ========================= */
 const STATUS_OPTIONS = [
+  { value: 5, label: "İçeri Aktarılmış" },
   { value: 0, label: "Depoda" },
   { value: 1, label: "Projede" },
   { value: 2, label: "Arızalı - Onarım" },
@@ -27,7 +28,7 @@ const EMPTY_FORM = {
   description: "",
   assignedProject: "",
   assignedPerson: "",
-  status: 0, // 🔥 Default: Depoda
+  status: 5, // İçeri Aktarılmış
 };
 
 export default function InventorySidebar({
@@ -58,7 +59,7 @@ export default function InventorySidebar({
         description: editingItem.description ?? "",
         assignedProject: editingItem.assignedProject ?? "",
         assignedPerson: editingItem.assignedPerson ?? "",
-        status: typeof editingItem.status === "number" ? editingItem.status : 0,
+        status: typeof editingItem.status === "number" ? editingItem.status : 5, // 🔥 BURASI
       });
     } else {
       setForm(EMPTY_FORM);
@@ -167,17 +168,19 @@ export default function InventorySidebar({
           />
         </div>
 
-        {/* STATUS */}
-        <div className="form-group">
-          <label>Durum *</label>
-          <select value={form.status} onChange={handleStatusChange}>
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* STATUS – SADECE EDIT MODE */}
+        {editingItem && (
+          <div className="form-group">
+            <label>Durum *</label>
+            <select value={form.status} onChange={handleStatusChange}>
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="form-group">
           <label>Stok Giriş Tarihi</label>

@@ -165,14 +165,10 @@
   font-size: 14px;
 }
 
-/* Aktif / Pasif dropdown */
 .active-filter {
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  font-size: 14px;
-  background: white;
+  transform: scale(1.1);
 }
+
 
 /* =========================
    PAGINATION
@@ -561,4 +557,52 @@
   padding: 4px;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+.filter-btn {
+  position: relative;
+}
+
+.filter-btn.active-filter {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.filter-indicator-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background-color: #ef4444; /* kırmızı */
+  border-radius: 50%;
+}
+
+.filter-btn {
+  position: relative;
+}
+
+.filter-btn.active-filter {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.filter-indicator-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 7px;
+  height: 7px;
+  background-color: #ef4444;
+  border-radius: 50%;
+}
+
+.clear-filters-btn.filters-active {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.filters-active-badge {
+  margin-left: 6px;
+  color: #ef4444;
+  font-size: 12px;
 }

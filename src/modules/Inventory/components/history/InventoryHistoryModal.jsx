@@ -77,7 +77,7 @@ export default function InventoryHistoryModal({ inventoryId, onClose }) {
                     <td>{h.itemName || ""}</td>
                     <td>{h.itemGroup || ""}</td>
                     <td>{h.model || ""}</td>
-                    <td>{h.status || ""}</td>
+                    <td>{STATUS_LABELS[h.status] || h.status || ""}</td>
                     <td>{formatDate(h.stockInDate)}</td>
                     <td>{formatDate(h.stockOutDate)}</td>
                     <td>{h.description || ""}</td>

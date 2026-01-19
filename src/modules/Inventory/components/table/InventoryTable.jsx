@@ -61,6 +61,7 @@ export default function InventoryTable({
     2: "Arızalı - Onarım",
     3: "Arızalı - Kullanım Dışı",
     4: "Stoktan Çıkarıldı",
+    5: "İçeri Aktarılmış",
   };
 
   const columns = [
@@ -79,8 +80,10 @@ export default function InventoryTable({
   ];
 
   const [filters, setFilters] = useState(
-    Object.fromEntries(columns.map((c) => [c.key, []]))
+    Object.fromEntries(columns.map((c) => [c.key, []])),
   );
+
+  const hasAnyFilter = Object.values(filters).some((v) => v && v.length > 0);
 
   const [openDescription, setOpenDescription] = useState(null);
 
@@ -98,7 +101,7 @@ export default function InventoryTable({
 
   const getDistinct = (key) => {
     return Array.from(
-      new Set(data.map((x) => x[key]).filter((v) => v && v.trim()))
+      new Set(data.map((x) => x[key]).filter((v) => v && v.trim())),
     ).sort((a, b) => a.localeCompare(b, "tr", { sensitivity: "base" }));
   };
 
@@ -230,7 +233,7 @@ export default function InventoryTable({
               return prev.filter((x) => x.id !== id);
             }
             return prev.map((x) =>
-              x.id === id ? { ...x, isActive: false } : x
+              x.id === id ? { ...x, isActive: false } : x,
             );
           });
         } catch (err) {
@@ -255,7 +258,7 @@ export default function InventoryTable({
               return prev.filter((x) => x.id !== id);
             }
             return prev.map((x) =>
-              x.id === id ? { ...x, isActive: true } : x
+              x.id === id ? { ...x, isActive: true } : x,
             );
           });
         } catch (err) {
@@ -331,8 +334,8 @@ export default function InventoryTable({
                                   : prev.map((x) =>
                                       selectedIds.has(x.id)
                                         ? { ...x, isActive: false }
-                                        : x
-                                    )
+                                        : x,
+                                    ),
                               );
                               setSelectedIds(new Set());
                             } finally {
@@ -371,8 +374,10 @@ export default function InventoryTable({
                                 activeFilter === "active"
                                   ? []
                                   : prev.map((x) =>
-                                      x.isActive ? { ...x, isActive: false } : x
-                                    )
+                                      x.isActive
+                                        ? { ...x, isActive: false }
+                                        : x,
+                                    ),
                               );
                               setSelectedIds(new Set());
                             } catch (err) {
@@ -412,13 +417,13 @@ export default function InventoryTable({
                                   : prev.map((x) =>
                                       selectedIds.has(x.id)
                                         ? { ...x, isActive: true }
-                                        : x
-                                    )
+                                        : x,
+                                    ),
                               );
                               setSelectedIds(new Set());
                             } catch (err) {
                               alert(
-                                err.message || "Toplu geri yükleme başarısız"
+                                err.message || "Toplu geri yükleme başarısız",
                               );
                             } finally {
                               setIsProcessing(false);
@@ -458,12 +463,14 @@ export default function InventoryTable({
                                 activeFilter === "inactive"
                                   ? []
                                   : prev.map((x) =>
-                                      !x.isActive ? { ...x, isActive: true } : x
-                                    )
+                                      !x.isActive
+                                        ? { ...x, isActive: true }
+                                        : x,
+                                    ),
                               );
                             } catch (err) {
                               alert(
-                                err.message || "Toplu geri yükleme başarısız"
+                                err.message || "Toplu geri yükleme başarısız",
                               );
                             } finally {
                               setIsProcessing(false);
@@ -566,7 +573,9 @@ export default function InventoryTable({
                   </span>
 
                   <button
-                    className="filter-btn"
+                    className={`filter-btn ${
+                      filters[col.key]?.length > 0 ? "active-filter" : ""
+                    }`}
                     onClick={(e) => {
                       if (openFilter === col.key) {
                         handleCloseFilter();
@@ -575,8 +584,16 @@ export default function InventoryTable({
                         setFilterAnchor(e.currentTarget);
                       }
                     }}
+                    title={
+                      filters[col.key]?.length > 0
+                        ? "Bu kolonda filtre uygulanıyor"
+                        : "Filtrele"
+                    }
                   >
                     ▼
+                    {filters[col.key]?.length > 0 && (
+                      <span className="filter-indicator-dot" />
+                    )}
                   </button>
 
                   {openFilter === col.key && (
@@ -601,11 +618,20 @@ export default function InventoryTable({
               >
                 <span>İşlem</span>
                 <button
-                  className="clear-filters-btn"
+                  className={`clear-filters-btn ${
+                    hasAnyFilter ? "filters-active" : ""
+                  }`}
                   onClick={clearAllFilters}
-                  title="Tüm filtreleri temizle"
+                  title={
+                    hasAnyFilter
+                      ? "Aktif filtreler var"
+                      : "Tüm filtreleri temizle"
+                  }
                 >
                   Filtreleri Temizle
+                  {hasAnyFilter && (
+                    <span className="filters-active-badge">●</span>
+                  )}
                 </button>
               </div>
             </th>
